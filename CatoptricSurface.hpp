@@ -81,14 +81,14 @@ class CatoptricSurface {
         std::string SERIAL_INFO_PREFIX; 
 
         std::vector<SerialPort> getOrderedSerialPorts();
-        std::vector<SerialPort> readSerialPorts();
+        std::vector<SerialPort> readSerialPorts(std::string baseDir);
         void setupRowInterfaces();
         void run();
         void getCSV(std::string path);
         std::vector<std::string> getNextLineAndSplitIntoTokens(
                 std::istream& str);
         void parseCSVLine(int csvLineInd, int& rowRead, 
-                int& mirrorColumn, int& motorNumber, int& position); 
+                int& mirrorColumn, int& motorNumber, int& position);
 
     public:
         CatoptricSurface();

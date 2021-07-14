@@ -25,7 +25,6 @@ struct serialComp {
 } serialCompObj;
 
 SerialPort::SerialPort() {
-    printf("SerialPort default cosntructor\n");
     serialNumber = string();
     row = UNDEF_ORDER;
 }
@@ -188,7 +187,7 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
     }
 
     // Read VFS entries for serial ports from 'ls' output
-    vector<SerialPort> serialPorts = readSerialPorts();
+    vector<SerialPort> serialPorts = readSerialPorts(path);
 
     // Sort serial ports by their serial number
     sort(serialPorts.begin(), serialPorts.end(), serialCompObj);
@@ -201,9 +200,10 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
 }
 
 /* Read the file containing 'ls' output to scan VFS entries.
+ * Serial ports reside in the base directory passed to the function.
  * Return vector of SerialPort objects representing only connected Arduinos.
  */
-vector<SerialPort> CatoptricSurface::readSerialPorts() {
+vector<SerialPort> CatoptricSurface::readSerialPorts(string baseDir) {
 
     vector<SerialPort> serialPorts;
 
@@ -229,8 +229,12 @@ vector<SerialPort> CatoptricSurface::readSerialPorts() {
                 printf("Unrecognized device: serialNumber %s\n", 
                         serialNumber.c_str());
             } else {
-                serialPorts.push_back(SerialPort(serialNumber, row, 
-                            serialInfoLine));
+
+                string path;
+                if(baseDir.empty()) path = "./" + serialInfoLine;
+                else path = baseDir + "/" + serialInfoLine;
+                
+                serialPorts.push_back(SerialPort(serialNumber, row, path));
             }
         }
 
@@ -241,18 +245,25 @@ vector<SerialPort> CatoptricSurface::readSerialPorts() {
 }
 
 /* Initializes a CatoptricRow object for each available Arduino.
- * Initializes rowInterfaces accordingly.
+ * Populates rowInterfaces accordingly.
  */
 void CatoptricSurface::setupRowInterfaces() {
     for(SerialPort sp : serialPorts) {
 
         string port = sp.device;
+        char cstr[port.size()];
+        strcpy(cstr, port.c_str());
+
         int rowNum = sp.row;
         int rowLen = dimensions.getLength(rowNum);
 
 		printf(" -- Initializing Catoptric Row %d with %d mirrors\n", 
                 rowNum, rowLen);
-	    rowInterfaces.push_back(CatoptricRow(rowNum, rowLen, port.c_str()));
+
+        CatoptricRow cr(rowNum, rowLen, cstr);
+	    rowInterfaces.push_back(cr);
+
+        printf("after push_back\n");
     }
 }
 

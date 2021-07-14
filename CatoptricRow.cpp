@@ -73,6 +73,8 @@ CatoptricRow::CatoptricRow() {}
 CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn, 
         const char *serialPortIn) {
 
+    printf("\tCatoptricRow non-default constructor %d\n", rowNumberIn);
+
 	rowNumber = rowNumberIn;
 	numMirrors = numMirrorsIn;
 
@@ -82,8 +84,10 @@ CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn,
 	    motorStates.push_back(state);
     }
 
+    printf("entering setupSerial\n");
 	// Configure the relevant serial port for communication
 	setupSerial(serialPortIn);
+    printf("exiting setupSerial\n");
 
     // Create FSM for communication with this Arduino.
     string rowStr = to_string(rowNumber);
@@ -95,15 +99,18 @@ CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn,
  */
 int CatoptricRow::setupSerial(const char *serialPortIn) {
     
+    printf("setupSerial(\"%s\")\n", serialPortIn);
     // Returns fd for configured serial port
     serial_fd = prep_serial(serialPortIn); 
     
+    printf("Compelted setupSerial, flushing buffer\n");
     // Flush residual data in buffer
     if(tcflush(serial_fd, TCIOFLUSH) < 0) {
         printf("tcflush error: %s\n", strerror(errno));
         return ERR_TCFLUSH;
     }
     
+    printf("Sleeping (?)\n");
     sleep(SETUP_SLEEP_TIME); // Why does this function sleep?
 
     return RET_SUCCESS;
