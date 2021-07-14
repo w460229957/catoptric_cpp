@@ -72,7 +72,7 @@ class CatoptricSurface {
         // Encodes the dimensions of surface (length of each row)
         SurfaceDimensions dimensions;
         // Vector of objects, each representing one row in surface
-        CatoptricRow rowInterfaces[NUM_ROWS];
+        std::vector<CatoptricRow> rowInterfaces;
         // Vector of objects each representing a serial port open to an Arduino
         std::vector<SerialPort> serialPorts;
         // Vector of cells read in from the latest CSV

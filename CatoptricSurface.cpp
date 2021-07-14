@@ -1,7 +1,7 @@
 
 #include <algorithm> // sort
 #include <stdlib.h>
-#include <stdio.h>      // snprintf
+#include <cstdio>      // snprintf
 #include <sstream>
 #include <fstream>
 #include <unistd.h>
@@ -13,6 +13,7 @@
 using namespace std;
 
 int main() {
+    CatoptricSurface catsurf;
     return 0;
 }
 
@@ -24,6 +25,7 @@ struct serialComp {
 } serialCompObj;
 
 SerialPort::SerialPort() {
+    printf("SerialPort default cosntructor\n");
     serialNumber = string();
     row = UNDEF_ORDER;
 }
@@ -133,9 +135,10 @@ int SurfaceDimensions::getLength(unsigned rowNumber) {
 
 CatoptricSurface::CatoptricSurface() {
 
+    printf("entered constructor\n");
     SERIAL_INFO_PREFIX = SERIAL_INFO_PREFIX_MACRO;
 
-    serialPortOrder.addPort(SerialPort("8543931323035121E170", 1));
+    /*serialPortOrder.addPort(SerialPort("8543931323035121E170", 1));
     serialPortOrder.addPort(SerialPort("8543931323035130C092", 2));
     serialPortOrder.addPort(SerialPort("85439313230351610262", 3));
     serialPortOrder.addPort(SerialPort("75435353934351D052C0", 4));
@@ -151,13 +154,22 @@ CatoptricSurface::CatoptricSurface() {
     serialPortOrder.addPort(SerialPort("85436323631351300201", 14));
     serialPortOrder.addPort(SerialPort("75435353934351E07072", 15));
     serialPortOrder.addPort(SerialPort("8543931323035170D0C2", 16));
-    serialPortOrder.addPort(SerialPort("854393133303518072A1", 33));
+    serialPortOrder.addPort(SerialPort("854393133303518072A1", 33));*/
+
+    // TODO : DELETE THESE FOLLOWING TWO LINES, only exists for testing purposes
+    serialPortOrder.addPort(SerialPort("75435353934351E01131", 1));
+    serialPortOrder.addPort(SerialPort("75833313633351318042", 2));
+
+    printf("entering getOrderSerialPorts\n");
 
     serialPorts = getOrderedSerialPorts();
     numRowsConnected = serialPorts.size();
     
+    printf("entering initDimensions\n");
     dimensions.initDimensions(DIMENSIONS_FILENAME);
+    printf("entering setupRowInterfaces\n");
     setupRowInterfaces();
+    printf("entering reset\n");
     reset();
 }
 
@@ -240,7 +252,7 @@ void CatoptricSurface::setupRowInterfaces() {
 
 		printf(" -- Initializing Catoptric Row %d with %d mirrors\n", 
                 rowNum, rowLen);
-	    rowInterfaces[rowNum] = CatoptricRow(rowNum, rowLen, port.c_str());
+	    rowInterfaces.push_back(CatoptricRow(rowNum, rowLen, port.c_str()));
     }
 }
 
