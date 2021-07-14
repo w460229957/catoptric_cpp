@@ -16,6 +16,7 @@ SerialFSM::SerialFSM(string name_in) {
     nackCount = 0;
     ackCount = 0;
     currentState = 0;
+    message = nullptr;
 
     resetVariables();
 }
@@ -26,6 +27,7 @@ SerialFSM::SerialFSM() {
     nackCount = 0;
     ackCount = 0;
     currentState = 0;
+    message = nullptr;
 
     resetVariables();
 }
@@ -108,9 +110,10 @@ void SerialFSM::resetVariables() {
  */
 void SerialFSM::clearMsg() {
 
-    if(message != NULL) {
+    if(message != nullptr) {
+        printf("freeing message\n");
         free(message);
-        message = NULL;
+        message = nullptr;
     }
 
     messageEnd = message;

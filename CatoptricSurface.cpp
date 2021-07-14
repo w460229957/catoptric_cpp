@@ -170,6 +170,7 @@ CatoptricSurface::CatoptricSurface() {
     setupRowInterfaces();
     printf("entering reset\n");
     reset();
+    printf("exiting CatoptricSurface constructor\n");
 }
 
 /* Returns a vector of SerialPort objects each representing a connected Arduino,
@@ -234,6 +235,8 @@ vector<SerialPort> CatoptricSurface::readSerialPorts(string baseDir) {
                 if(baseDir.empty()) path = "./" + serialInfoLine;
                 else path = baseDir + "/" + serialInfoLine;
                 
+                printf(" *** Detected serial port %s ***\n", path.c_str());
+
                 serialPorts.push_back(SerialPort(serialNumber, row, path));
             }
         }
@@ -262,8 +265,6 @@ void CatoptricSurface::setupRowInterfaces() {
 
         CatoptricRow cr(rowNum, rowLen, cstr);
 	    rowInterfaces.push_back(cr);
-
-        printf("after push_back\n");
     }
 }
 
