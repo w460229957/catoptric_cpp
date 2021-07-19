@@ -93,7 +93,7 @@ void CatoptricController::run() {
 vector<string> CatoptricController::checkForNewCSV() {
 
     // Create file listing contents of csv/new
-    string directoryStr = "./csv/new";
+    string directoryStr = NEW_CSV_DIR;
     string ls_cmd = "ls " + directoryStr + " > " + LS_CSV_FILENAME;
     int ret;
     if((ret = system(ls_cmd.c_str())) != SYSTEM_SUCCESS) {

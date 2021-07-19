@@ -24,6 +24,7 @@
 #define LS_CSV_FILENAME ".csvSearch"    // Arbitrarily named
 #define DIMENSIONS_FILENAME "surface_dimensions"    // Must be present in dir
 #define SERIAL_INFO_PREFIX_MACRO "usb-Arduino__www.arduino.cc__0043_"
+#define DEVICE_PATH "/dev/serial/by-id"
 
 struct SerialPort {
     std::string serialNumber;   // Serial number (how to obtain in C++?)
@@ -95,5 +96,4 @@ class CatoptricSurface {
 
         void reset(bool test);
         void updateByCSV(std::string path);
-
 };

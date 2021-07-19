@@ -92,12 +92,12 @@ CatoptricSurface::CatoptricSurface() {
  */
 vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
 
-    string path = "/dev/serial/by-id";
+    string path = DEVICE_PATH;
     string ls_id_cmd = "ls " + path + " > " + LS_ID_FILENAME;
 
     int ret = system(ls_id_cmd.c_str());
     if(ret == NO_DEVICES) {
-        printf("No devices detected in \'/dev/serial/by-id\'\n");
+        printf("No devices detected in \'%s\'\n", DEVICE_PATH);
         return vector<SerialPort>();
     }
 
@@ -211,6 +211,8 @@ void CatoptricSurface::getCSV(string path) {
     bool readData = false;
 
     ifstream fs(path.c_str());
+    printf("eof(%d) good(%d) fail(%d)\n", fs.eof(), fs.good(), fs.fail());
+    printf("errno %d: %s\n", errno, strerror(errno));
     while(fs && !fs.eof()) {
         readData = true;
         // Get vector of next line's elements
@@ -223,6 +225,8 @@ void CatoptricSurface::getCSV(string path) {
    if(!readData) printf("Didn't read data from CSV %s\n", path.c_str());
 
    printf("\t debug csvData.size()=%d\n", csvData.size());
+   for(string s : csvData) printf("%s ", s.c_str());
+   printf("\n");
 
    fs.close();
 }
