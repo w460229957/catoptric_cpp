@@ -14,6 +14,9 @@
 #define STR_EQUAL 0
 #define DIR_LEN_INIT -10
 
+#define ARCHIVE_DIR "csv/archive"
+#define NEW_CSV_DIR "csv/new"
+
 class CatoptricController {
 
     private:

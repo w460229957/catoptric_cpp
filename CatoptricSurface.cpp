@@ -222,6 +222,8 @@ void CatoptricSurface::getCSV(string path) {
 
    if(!readData) printf("Didn't read data from CSV %s\n", path.c_str());
 
+   printf("\t debug csvData.size()=%d\n", csvData.size());
+
    fs.close();
 }
 

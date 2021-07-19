@@ -64,7 +64,8 @@ void CatoptricController::run() {
             printf(" -- \'%s\' ran successfully\n", csv.c_str());
 
             // Find the number of files in csv/archive
-            string archiveDir = "./csv/archive";
+            string archiveDir = ARCHIVE_DIR;
+            string newCsvDir = NEW_CSV_DIR;
             int archiveLength = getNumFiles(archiveDir);
             if(archiveLength < 0) {
                 printf("Error in getNumFiles\n");
@@ -72,9 +73,10 @@ void CatoptricController::run() {
             }
 
             // Rename + move CSV file to csv/archive
-            string newName = "./csv/archive/" + to_string(archiveLength) + 
+            string csvPath = newCsvDir + "/" + csv;
+            string newName = archiveDir + "/" + to_string(archiveLength) + 
                 "_" + csv;
-            if(renameMoveFile(csv, newName) < 0) {
+            if(renameMoveFile(csvPath, newName) < 0) {
                 printf("Error in renameMoveFile\n");
                 return;
             }
