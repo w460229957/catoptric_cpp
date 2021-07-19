@@ -33,7 +33,8 @@ void CatoptricController::run() {
     while(CONTROLLER_RUNNING) { // Infinite event loop
 
         string csv = "";
-        string inputMessage = "\'Reset\' mirrors or upload a file to run: ";
+        string inputMsg = "\'Reset\' mirrors, 'Test' motors, or upload a"
+                          " file to run: ";
 
         // Retrieve any new CSV files
         vector<string> csvList = checkForNewCSV();
@@ -43,14 +44,19 @@ void CatoptricController::run() {
         if(csvList.size() > 0) {
             csv = csvList[0];
             printf(" -- Found csv file \'%s\'\n", csv.c_str());
-            inputMessage = "\'Reset\' mirrors or \'Run\' file: ";
+            inputMsg = "\'Reset\' mirrors, 'Test' motors, or \'Run\' file: ";
         }
 
-        string userInput = getUserInput(inputMessage);
+        string userInput = getUserInput(inputMsg);
 
         if(userInput.compare("reset") == STR_EQUAL) {
-            surface.reset();
+            surface.reset(false);
             printf(" -- Reset Complete\n");
+        } else if(userInput.compare("test") == STR_EQUAL) {
+            surface.reset(true);
+            printf("\tBEWARE: Orientation of mirrors is no longer "
+                    "guaranteed!\n");
+            printf(" -- Test Complete\n");
         } else if(csvList.size() > 0 && userInput.compare("run") == STR_EQUAL) {
             
             printf(" -- Running \'%s\'\n", csv.c_str());
@@ -194,7 +200,7 @@ int CatoptricController::extractFirstIntFromFile(istream& filStream) {
  */
 int CatoptricController::renameMoveFile(string src, string dest) {
 
-    string mov_cmd = "mov " + src + " " + dest;
+    string mov_cmd = "mv " + src + " " + dest;
     if(system(mov_cmd.c_str()) != SYSTEM_SUCCESS) {
         printf("Error in system function for command \'%s\': %s\n", 
                 mov_cmd.c_str(), strerror(errno));

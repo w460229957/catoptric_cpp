@@ -93,7 +93,7 @@ class CatoptricSurface {
     public:
         CatoptricSurface();
 
-        void reset();
+        void reset(bool test);
         void updateByCSV(std::string path);
 
 };

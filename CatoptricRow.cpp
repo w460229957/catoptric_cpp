@@ -134,24 +134,24 @@ int CatoptricRow::resetSerialBuffer() {
 void CatoptricRow::update() {
     
     char input;
-    int count = 0; // TODO : delete, 'count' var exists for debugging purposes
+    //int count = 0; // TODO : delete, 'count' var exists for debugging purposes
     while(read(serial_fd, &input, 1) > 0) {
-        if(count++ == 0) printf("Incoming from row %d:", rowNumber);
-        printf("%c", input);
+        //if(count++ == 0) printf("Incoming from row %d:", rowNumber);
+        //printf("%c", input);
         fsm.Execute(input);
         if(fsm.messageReady) {
             printf("Incoming message:%s\n", fsm.message);
             fsm.clearMsg();
         }
     }
-    if(count > 0) printf("_end_incoming_\n");
+    //if(count > 0) printf("_end_incoming_\n");
 
-    printf("commandQueue.size() = %d\n", commandQueue.size());
+    //printf("commandQueue.size() = %d\n", commandQueue.size());
     // If the number of pending commands is < max limit and is > 0
 	while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
 		Message message = commandQueue.back();
         commandQueue.pop_back();
-        printf("\tRow %d sending message\n", rowNumber);
+        //printf("\tRow %d sending message\n", rowNumber);
 		sendMessageToArduino(message);
     }
 }
@@ -189,8 +189,8 @@ void CatoptricRow::stepMotor(int mirrorID, int whichMotor,
 	int countLow = ((int) deltaPosInt) & 255;
 	int countHigh = (((int) deltaPosInt) >> 8) & 255;
     
-    printf("\tstepMotor row %d, mirror %d, motor %d, direction %d, delta %d\n",
-            rowNumber, mirrorID, whichMotor, direction, deltaPosInt);
+    /*printf("\tstepMotr row %d, mirror %d, motor %d, direction %d, delta %d\n",
+            rowNumber, mirrorID, whichMotor, direction, deltaPosInt);*/
 
     // mirrorID could just as well be named columnNumber
 	Message message (rowNumber, mirrorID, whichMotor, direction, 
@@ -226,16 +226,26 @@ void CatoptricRow::reorientMirrorAxis(Message command) {
     motorStates[mirror - 1].motor[motor] = newState;
 }
 
-/* Reset/'zero' the orientation of all mirrors in this row.
+/* Reset the orientation of all mirrors in this row or test functionality
+ * of the motors/connection,, depending on value of 'test' parameter.
  */
-void CatoptricRow::reset() {
-	for(int i = 0; i < numMirrors; ++i) {
-        // Column numbers seem to not be 0-indexed on the Arduino?
-        printf("Resetting both motors on mirror %d of row %d\n", i, rowNumber);
-		stepMotor(i + 1, 1, 0, 200);
-		stepMotor(i + 1, 0, 0, 200);
-		motorStates[i].motor[PAN_IND] = 0;
-		motorStates[i].motor[TILT_IND] = 0;
+void CatoptricRow::reset(bool test) {
+    // Column numbers seem to not be 0-indexed on the Arduino?
+
+    if(test) {
+        for(int i = 0; i < numMirrors; ++i) {
+            /* Orientation of mirrors isn't guaranteed after executing this, 
+             * shouldn't use with 'test'=true for anything but debugging! */
+            stepMotor(i + 1, PAN_IND, MOTOR_FORWARD, MOTOR_TEST_ARC);
+            stepMotor(i + 1, PAN_IND, MOTOR_BACKWARD, MOTOR_TEST_ARC);
+            stepMotor(i + 1, TILT_IND, MOTOR_FORWARD, MOTOR_TEST_ARC);
+            stepMotor(i + 1, TILT_IND, MOTOR_BACKWARD, MOTOR_TEST_ARC);
+        }
+    } else {
+        for(int i = 0; i < numMirrors; ++i) {
+            stepMotor(i + 1, PAN_IND, MOTOR_BACKWARD, MOTOR_RESET_ARC);
+            stepMotor(i + 1, TILT_IND, MOTOR_BACKWARD, MOTOR_RESET_ARC);
+        }
     }
 
     update();

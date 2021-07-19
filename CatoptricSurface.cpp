@@ -84,7 +84,7 @@ CatoptricSurface::CatoptricSurface() {
     
     dimensions.initDimensions(DIMENSIONS_FILENAME);
     setupRowInterfaces();
-    reset();
+    reset(false);
 }
 
 /* Returns a vector of SerialPort objects each representing a connected Arduino,
@@ -190,12 +190,13 @@ void CatoptricSurface::setupRowInterfaces() {
     }
 }
 
-/* Reset the orientation of every mirror and resume running.
+/* Reset the orientation of every mirror or test functionality of the 
+ * motors/connection (depending on 'test' parameter) and resume running.
  */
-void CatoptricSurface::reset() {
+void CatoptricSurface::reset(bool test) {
     printf(" -- Resetting all mirrors to default position\n");
     for(CatoptricRow cr : rowInterfaces) {
-        cr.reset(); // Reset whole row
+        cr.reset(test); // Reset whole row
     }
 
     run();

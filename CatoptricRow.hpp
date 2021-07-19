@@ -8,6 +8,8 @@
 #define NUM_MSG_ELEMS 8
 #define NUM_MOTORS    2
 #define SETUP_SLEEP_TIME 2
+#define MOTOR_RESET_ARC 200
+#define MOTOR_TEST_ARC 80
 
 #define MSG_MAGIC_NUM '!'
 #define ACK_KEY 'A'
@@ -15,6 +17,10 @@
 // Indices for values storing orientations of each motor in each mirror unit
 #define PAN_IND  0
 #define TILT_IND 1
+
+// TODO : Not sure these values are correct, may need to swap them!
+#define MOTOR_FORWARD  1
+#define MOTOR_BACKWARD 0
 
 /* Encodes the state of mirror motors unit */
 struct MotorState {
@@ -66,7 +72,7 @@ class CatoptricRow {
         CatoptricRow(int rowNumber_in, int numMirrors_in, 
                 const char *serial_port_in);
 
-	    void reset();
+	    void reset(bool test);
         void update();
         int resetSerialBuffer();
         int getRowNumber();
