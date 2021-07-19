@@ -13,8 +13,16 @@
 
 using namespace std;
 
+int main() {
+    CatoptricController catCon;
+    catCon.run();
+    return RET_SUCCESS;
+}
+
 CatoptricController::CatoptricController() {
-    surface = CatoptricSurface();
+    // surface = CatoptricSurface(); 
+    /* Superflous because cpp intiializes 
+            member objs automatically before constructor? */
 }
 
 /* Repeatedly check for new CSV files and prompt user for input:

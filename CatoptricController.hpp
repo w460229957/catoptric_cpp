@@ -19,8 +19,6 @@ class CatoptricController {
     private:
         CatoptricSurface surface;
 
-        CatoptricController();
-
         std::vector<std::string> checkForNewCSV();
         std::string getUserInput(std::string inputMessage);
         int getNumFiles(std::string dir);
@@ -28,5 +26,6 @@ class CatoptricController {
         int renameMoveFile(std::string src, std::string dest);
 
     public:
+        CatoptricController();
         void run();
 };

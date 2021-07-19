@@ -45,8 +45,15 @@ Message::Message(int mirrorRow, int mirrorColumn, int motorNumber,
  */
 vector<char> Message::toVec() {
 
-    string msgStr = toStr();
-    vector<char> msgVec(msgStr.begin(), msgStr.end());
+    vector<char> msgVec;
+    msgVec.push_back(MSG_MAGIC_NUM);
+    msgVec.push_back(ACK_KEY);
+    msgVec.push_back(rowNum);
+    msgVec.push_back(mirrorID);
+    msgVec.push_back(whichMotor);
+    msgVec.push_back(direction);
+    msgVec.push_back(countHigh);
+    msgVec.push_back(countLow);
 
     return msgVec;
 }
@@ -127,18 +134,24 @@ int CatoptricRow::resetSerialBuffer() {
 void CatoptricRow::update() {
     
     char input;
+    int count = 0; // TODO : delete, 'count' var exists for debugging purposes
     while(read(serial_fd, &input, 1) > 0) {
+        if(count++ == 0) printf("Incoming from row %d:", rowNumber);
+        printf("%c", input);
         fsm.Execute(input);
         if(fsm.messageReady) {
             printf("Incoming message:%s\n", fsm.message);
             fsm.clearMsg();
         }
     }
+    if(count > 0) printf("_end_incoming_\n");
 
+    printf("commandQueue.size() = %d\n", commandQueue.size());
     // If the number of pending commands is < max limit and is > 0
-	if(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
+	while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
 		Message message = commandQueue.back();
         commandQueue.pop_back();
+        printf("\tRow %d sending message\n", rowNumber);
 		sendMessageToArduino(message);
     }
 }
@@ -152,7 +165,9 @@ void CatoptricRow::sendMessageToArduino(Message message) {
 
 	for(int i = 0; i < NUM_MSG_ELEMS; ++i) {
 		bCurrent = message_vec[i];
-        if(write(serial_fd, &bCurrent, 1) < 0) {
+        int writeRet = write(serial_fd, &bCurrent, 1);  // TODO : undo this
+        //printf("\twriteRet %d\n", writeRet);
+        if(writeRet < 0) {
             printf("write error: %s\n", strerror(errno));
             return;
         }
@@ -174,6 +189,9 @@ void CatoptricRow::stepMotor(int mirrorID, int whichMotor,
 	int countLow = ((int) deltaPosInt) & 255;
 	int countHigh = (((int) deltaPosInt) >> 8) & 255;
     
+    printf("\tstepMotor row %d, mirror %d, motor %d, direction %d, delta %d\n",
+            rowNumber, mirrorID, whichMotor, direction, deltaPosInt);
+
     // mirrorID could just as well be named columnNumber
 	Message message (rowNumber, mirrorID, whichMotor, direction, 
             countHigh, countLow);
@@ -213,11 +231,14 @@ void CatoptricRow::reorientMirrorAxis(Message command) {
 void CatoptricRow::reset() {
 	for(int i = 0; i < numMirrors; ++i) {
         // Column numbers seem to not be 0-indexed on the Arduino?
+        printf("Resetting both motors on mirror %d of row %d\n", i, rowNumber);
 		stepMotor(i + 1, 1, 0, 200);
 		stepMotor(i + 1, 0, 0, 200);
 		motorStates[i].motor[PAN_IND] = 0;
 		motorStates[i].motor[TILT_IND] = 0;
     }
+
+    update();
 }
 
 /* Get the SerialFSM's currentCommandsToArduino */
