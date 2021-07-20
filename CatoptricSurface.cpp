@@ -413,3 +413,7 @@ int SurfaceDimensions::getLength(unsigned rowNumber) {
         return defaultRowLen;
     }
 }
+
+void CatoptricSurface::cleanup() {
+    for(CatoptricRow cr : rowInterfaces) cr.cleanup();
+}

@@ -264,3 +264,7 @@ int CatoptricRow::getRowNumber() {
     return rowNumber;
 }
 
+void CatoptricRow::cleanup() {
+    close(serial_fd);
+    fsm.clearMsg();
+}

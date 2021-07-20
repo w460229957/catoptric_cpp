@@ -45,7 +45,10 @@ void CatoptricController::run() {
 
         string userInput = getUserInput(inputMsg);
 
-        if(userInput.compare("reset") == STR_EQUAL) {
+        if (userInput.compare("quit") == STR_EQUAL) {
+            surface.cleanup();
+            return;
+        } else if(userInput.compare("reset") == STR_EQUAL) {
             surface.reset(false);
             printf(" -- Reset Complete\n");
         } else if(userInput.compare("test") == STR_EQUAL) {
