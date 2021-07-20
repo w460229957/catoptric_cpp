@@ -19,11 +19,7 @@ int main() {
     return RET_SUCCESS;
 }
 
-CatoptricController::CatoptricController() {
-    // surface = CatoptricSurface(); 
-    /* Superflous because cpp intiializes 
-            member objs automatically before constructor? */
-}
+CatoptricController::CatoptricController() {}
 
 /* Repeatedly check for new CSV files and prompt user for input:
  * either reset the mirrors or execute a new CSV file.
@@ -60,12 +56,15 @@ void CatoptricController::run() {
         } else if(csvList.size() > 0 && userInput.compare("run") == STR_EQUAL) {
             
             printf(" -- Running \'%s\'\n", csv.c_str());
-            surface.updateByCSV(csv);
+            
+            string archiveDir = ARCHIVE_DIR;
+            string newCsvDir = NEW_CSV_DIR;
+            string csvPath = newCsvDir + "/" + csv;
+
+            surface.updateByCSV(csvPath);
             printf(" -- \'%s\' ran successfully\n", csv.c_str());
 
             // Find the number of files in csv/archive
-            string archiveDir = ARCHIVE_DIR;
-            string newCsvDir = NEW_CSV_DIR;
             int archiveLength = getNumFiles(archiveDir);
             if(archiveLength < 0) {
                 printf("Error in getNumFiles\n");
@@ -73,7 +72,6 @@ void CatoptricController::run() {
             }
 
             // Rename + move CSV file to csv/archive
-            string csvPath = newCsvDir + "/" + csv;
             string newName = archiveDir + "/" + to_string(archiveLength) + 
                 "_" + csv;
             if(renameMoveFile(csvPath, newName) < 0) {

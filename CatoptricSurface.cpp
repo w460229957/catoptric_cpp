@@ -194,7 +194,9 @@ void CatoptricSurface::setupRowInterfaces() {
  * motors/connection (depending on 'test' parameter) and resume running.
  */
 void CatoptricSurface::reset(bool test) {
-    printf(" -- Resetting all mirrors to default position\n");
+    if(!test) printf(" -- Resetting all mirrors to default position\n");
+    else printf(" -- Testing all motors\n");
+
     for(CatoptricRow cr : rowInterfaces) {
         cr.reset(test); // Reset whole row
     }
@@ -211,8 +213,6 @@ void CatoptricSurface::getCSV(string path) {
     bool readData = false;
 
     ifstream fs(path.c_str());
-    printf("eof(%d) good(%d) fail(%d)\n", fs.eof(), fs.good(), fs.fail());
-    printf("errno %d: %s\n", errno, strerror(errno));
     while(fs && !fs.eof()) {
         readData = true;
         // Get vector of next line's elements
@@ -224,31 +224,27 @@ void CatoptricSurface::getCSV(string path) {
 
    if(!readData) printf("Didn't read data from CSV %s\n", path.c_str());
 
-   printf("\t debug csvData.size()=%d\n", csvData.size());
-   for(string s : csvData) printf("%s ", s.c_str());
-   printf("\n");
-
    fs.close();
 }
 
 /* Returns a vector of all cells in the next unread line from the CSV
  * corresponding to the passed i(f)stream.
  */
-vector<string> CatoptricSurface::getNextLineAndSplitIntoTokens(istream& str) {
+vector<string> CatoptricSurface::getNextLineAndSplitIntoTokens(istream& strm) {
     
     vector<string> result;
     string line, cell;
     
-    getline(str,line);
+    getline(strm, line);
     stringstream lineStream(line);
 
     while(getline(lineStream, cell, ',')) {
         result.push_back(cell);
     }
 
-    if(result.size() == 0) {
-        printf("Failed to read data from CSV line in "
-                "getNextLineAndSplitIntoTokens\n");
+    if(result.size() == 0 && line.size() > 0) {
+        printf("Failed to read data from CSV line [%s] in "
+                "getNextLineAndSplitIntoTokens\n", line.c_str());
     }
 
     return result;
@@ -272,21 +268,22 @@ void CatoptricSurface::updateByCSV(string path) {
         
         int rowRead, mirrorColumn, motorNumber, position;
         parseCSVLine(csvLineInd, rowRead, mirrorColumn, motorNumber, position);
+        // Remember that row numbers are 1-indexed in the protocol, but not in
+        // these data structures!
 
         Message msg(rowRead, mirrorColumn, motorNumber, position);
-
         bool foundRow = false;
         for(int rowInd = 0; rowInd < NUM_ROWS; ++rowInd) {
             if(rowRead == rowInterfaces[rowInd].getRowNumber()) {
                 foundRow = true;
-                rowInterfaces[rowRead].reorientMirrorAxis(msg);
+                rowInterfaces[rowRead - 1].reorientMirrorAxis(msg);
                 break;
             }
         }
 
         if(!foundRow) {
             printf("Line %d of CSV is addressed to a row that does not exist"
-                    ": %d", csvLineInd, rowRead);
+                    ": %d (protocol is 1-indexed!)", csvLineInd, rowRead);
         }
     }
 
@@ -302,9 +299,9 @@ void CatoptricSurface::parseCSVLine(int csvLineInd, int& rowRead,
         mirrorColumn = stoi(csvData[csvLineInd + 1]);
         motorNumber  = stoi(csvData[csvLineInd + 2]);
         position     = stoi(csvData[csvLineInd + 3]);
-    } catch(const std::invalid_argument& e) {
+    } catch(...) {
         printf("Invalid CSV data passed to stoi in updateByCSV: %s\n", 
-                e.what());
+                strerror(errno));
         return;
     }
 }

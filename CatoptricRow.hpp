@@ -53,7 +53,7 @@ class CatoptricRow {
         int rowNumber, numMirrors;
         /* Vector of the current (theoretical) orientations for
            each subordinate motor */
-        std::vector<MotorState> motorStates;
+        //std::vector<MotorState> motorStates;
 
         int setupSerial(const char *serial_port_in);
         void stepMotor(int mirrorID, int whichMotor, int direction, 
@@ -62,6 +62,8 @@ class CatoptricRow {
 
 
     public:
+                // TODO : DELETE
+                std::vector<MotorState> motorStates;
 
         // Queue of pending Message objects to be transmitted to Arduino
         std::vector<Message> commandQueue;

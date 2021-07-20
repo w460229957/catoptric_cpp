@@ -134,25 +134,19 @@ int CatoptricRow::resetSerialBuffer() {
 void CatoptricRow::update() {
     
     char input;
-    //int count = 0; // TODO : delete, 'count' var exists for debugging purposes
     while(read(serial_fd, &input, 1) > 0) {
-        //if(count++ == 0) printf("Incoming from row %d:", rowNumber);
-        //printf("%c", input);
         fsm.Execute(input);
         if(fsm.messageReady) {
             printf("Incoming message:%s\n", fsm.message);
             fsm.clearMsg();
         }
     }
-    //if(count > 0) printf("_end_incoming_\n");
 
-    //printf("commandQueue.size() = %d\n", commandQueue.size());
-    // If the number of pending commands is < max limit and is > 0
 	while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
 		Message message = commandQueue.back();
         commandQueue.pop_back();
-        //printf("\tRow %d sending message\n", rowNumber);
 		sendMessageToArduino(message);
+	    fsm.currentCommandsToArduino--;
     }
 }
 
@@ -173,8 +167,10 @@ void CatoptricRow::sendMessageToArduino(Message message) {
         }
     }
 
-    printf("Successfully sent message to Arduino:%s\n", 
-            message.toStr().c_str());
+    printf("Successfully sent message to Arduino:"); 
+    vector<char> msgVec = message.toVec();
+    for(char c : msgVec) printf("%3d ", (unsigned) c);
+    printf("\n");
 
 	fsm.currentCommandsToArduino += 1; // New sent message, awaiting ack
 }
@@ -189,9 +185,6 @@ void CatoptricRow::stepMotor(int mirrorID, int whichMotor,
 	int countLow = ((int) deltaPosInt) & 255;
 	int countHigh = (((int) deltaPosInt) >> 8) & 255;
     
-    /*printf("\tstepMotr row %d, mirror %d, motor %d, direction %d, delta %d\n",
-            rowNumber, mirrorID, whichMotor, direction, deltaPosInt);*/
-
     // mirrorID could just as well be named columnNumber
 	Message message (rowNumber, mirrorID, whichMotor, direction, 
             countHigh, countLow);
@@ -207,7 +200,7 @@ void CatoptricRow::reorientMirrorAxis(Message command) {
     int mirror = command.mirrorID;
     int motor = command.whichMotor;
     int newState = command.newPos;
-    int currentState = -1; // Placeholder value to silence compiler warnings
+    int currentState = -1; // Placeholder value to silence compiler warnings :/
 
     if(motor == PAN_IND) {
         currentState = motorStates[mirror - 1].motor[PAN_IND];
