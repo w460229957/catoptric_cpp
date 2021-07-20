@@ -8,19 +8,6 @@
 
 using namespace std;
 
-SerialFSM::SerialFSM(string name_in) {
-
-    name = name_in;
-    
-    currentCommandsToArduino = 0;
-    nackCount = 0;
-    ackCount = 0;
-    currentState = 0;
-    message = nullptr;
-
-    resetVariables();
-}
-
 SerialFSM::SerialFSM() {
     
     currentCommandsToArduino = 0;

@@ -93,9 +93,7 @@ CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn,
 	setupSerial(serialPortIn);
 
     // Create FSM for communication with this Arduino.
-    string rowStr = to_string(rowNumber);
-    const char *rowCStr = rowStr.c_str();
-	fsm = SerialFSM(rowCStr);
+	fsm = SerialFSM();
 }
 
 /* Prepare the correpsonding serial port for IO (termios).
@@ -159,9 +157,7 @@ void CatoptricRow::sendMessageToArduino(Message message) {
 
 	for(int i = 0; i < NUM_MSG_ELEMS; ++i) {
 		bCurrent = message_vec[i];
-        int writeRet = write(serial_fd, &bCurrent, 1);  // TODO : undo this
-        //printf("\twriteRet %d\n", writeRet);
-        if(writeRet < 0) {
+        if(write(serial_fd, &bCurrent, 1) < 0) {
             printf("write error: %s\n", strerror(errno));
             return;
         }

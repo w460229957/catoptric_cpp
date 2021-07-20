@@ -17,7 +17,6 @@
 class SerialFSM {
 
     public:
-        std::string name; // TODO: unknown purpose?
         // messageEnd points to the null terminator of message string
         char *message, *messageEnd; 
         int messageReady;
@@ -30,7 +29,6 @@ class SerialFSM {
         int ackX, ackY, ackM; // Ack vars for X, Y, and Mirror
         int currentState;
 
-        SerialFSM(std::string name_in);
         SerialFSM();
         void Execute(char c); 
         void resetVariables();
