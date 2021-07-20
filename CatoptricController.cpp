@@ -28,46 +28,65 @@ void CatoptricController::run() {
 
     while(CONTROLLER_RUNNING) { // Infinite event loop
 
-        string csv = "";
         string inputMsg = "\'Reset\' mirrors, 'Test' motors, or upload a"
                           " file to run: ";
 
         // Retrieve any new CSV files
-        vector<string> csvList = checkForNewCSV();
+        checkForNewCSV();
 
         printf("\n-------------------------\n\n");
 
-        if(csvList.size() > 0) {
-            csv = csvList[0];
-            printf(" -- Found csv file \'%s\'\n", csv.c_str());
+        if(newCSVs.size() > 0) {
             inputMsg = "\'Reset\' mirrors, 'Test' motors, or \'Run\' file: ";
         }
 
         string userInput = getUserInput(inputMsg);
 
         if (userInput.compare("quit") == STR_EQUAL) {
-            surface.cleanup();
+            surface.cleanup(); // Free resources
             return;
         } else if(userInput.compare("reset") == STR_EQUAL) {
-            surface.reset(false);
+            surface.reset(NO_TEST_RESET);
             printf(" -- Reset Complete\n");
         } else if(userInput.compare("test") == STR_EQUAL) {
-            surface.reset(true);
+            surface.reset(TEST_RESET);
             printf("\tBEWARE: Orientation of mirrors is no longer "
                     "guaranteed!\n");
             printf(" -- Test Complete\n");
-        } else if(csvList.size() > 0 && userInput.compare("run") == STR_EQUAL) {
-            
+        } else if(newCSVs.size() > 0 && 
+                userInput.substr(0, 3).compare("run") == STR_EQUAL) {
+
+            int csvInd;
+            string csv, providedName = extractName(userInput);
+            printf("\tdebug providedName:[%s]\n", providedName.c_str());
+
+            if(!providedName.empty()) {
+                for(unsigned i = 0; i < newCSVs.size(); ++i) {
+                    if(newCSVs[i].compare(providedName) == STR_EQUAL) {
+                        csvInd = i;
+                        csv = providedName;
+                        break;
+                    }
+                }
+            } else if(providedName.empty()) {
+                csv = newCSVs[0];
+                csvInd = 0;
+            }
+
+            // Removes the csvInd'th element
+            newCSVs.erase(next(newCSVs.begin(), csvInd));
+
             printf(" -- Running \'%s\'\n", csv.c_str());
             
-            string archiveDir = ARCHIVE_DIR;
             string newCsvDir = NEW_CSV_DIR;
             string csvPath = newCsvDir + "/" + csv;
 
-            surface.updateByCSV(csvPath);
+            // Update mirrors' orientations based on CSV contents
+            surface.updateByCSV(csvPath); 
             printf(" -- \'%s\' ran successfully\n", csv.c_str());
 
             // Find the number of files in csv/archive
+            string archiveDir = ARCHIVE_DIR;
             int archiveLength = getNumFiles(archiveDir);
             if(archiveLength < 0) {
                 printf("Error in getNumFiles\n");
@@ -87,11 +106,21 @@ void CatoptricController::run() {
     }
 }
 
+/* Takes a filename. Examines extension to see if it's a .csv file
+ */
+bool isCSV(string name) {
+    string csvEnding = ".csv";
+    if(name.compare(name.length() - csvEnding.length(), 
+                csvEnding.length(), csvEnding) == CMP_EQUAL) {
+        return true;
+    } else return false;
+}
+
 /* Check csv/new directory for any newly deposited CSVs.
  * Uses 'system' function to execute command-line instructions for filesystem
  * inspection.
  */
-vector<string> CatoptricController::checkForNewCSV() {
+void CatoptricController::checkForNewCSV() {
 
     // Create file listing contents of csv/new
     string directoryStr = NEW_CSV_DIR;
@@ -103,21 +132,31 @@ vector<string> CatoptricController::checkForNewCSV() {
 
     ifstream ls_file_stream;
     string ls_line;
-    string csv_ending = ".csv";
-    vector<string> newCSVs;
 
     ls_file_stream.open(LS_CSV_FILENAME, ios_base::in);
     
     while(ls_file_stream.good() && !ls_file_stream.eof() && 
             getline(ls_file_stream, ls_line)) {
-        // If line from ls ends in ".csv"
-        if(ls_line.compare(ls_line.length() - csv_ending.length(), 
-                    csv_ending.length(), csv_ending) == CMP_EQUAL) {
-            newCSVs.push_back(ls_line);
+
+        if(isCSV(ls_line)) {
+            bool alreadyTracked = false;
+
+            for(string trackedCSV : newCSVs) {
+                if(trackedCSV.compare(ls_line) == CMP_EQUAL) {
+                    alreadyTracked = true;
+                }
+            }
+
+            if(!alreadyTracked) {
+                newCSVs.push_back(ls_line);
+                printf(" -- Found new csv file \'%s\'\n", ls_line.c_str());
+            } else {
+                printf(" -- Available csv file \'%s\'\n", ls_line.c_str());
+            }
         }
     }
 
-    return newCSVs;
+    return;
 }
 
 /* Retrieves user input and returns it lowercase.
@@ -125,7 +164,7 @@ vector<string> CatoptricController::checkForNewCSV() {
 string CatoptricController::getUserInput(string inputMessage) {
     string userInput;
     printf("%s", inputMessage.c_str());
-    cin >> userInput;
+    getline(cin, userInput);
     printf("\n\n");
 
     // Transform user input to lowercase characters
@@ -213,3 +252,21 @@ int CatoptricController::renameMoveFile(string src, string dest) {
     return RET_SUCCESS;
 }
 
+/* Provided a line of user input beginning with 'run', check for and return
+ * any filename following 'run'.
+ */
+string CatoptricController::extractName(string userInput) {
+    printf("\tdebug extractName, userInput[%s]\n", userInput.c_str());
+    string remaining = userInput.substr(3, userInput.size());
+    if(remaining.empty()) return remaining;
+
+    unsigned i = 0, j = remaining.size() - 1;
+    while(i < remaining.size() && 
+            (remaining[i] == ' ' || remaining[i] == '\n')) ++i;
+    while(j > 0 && (remaining[j] == ' ' || remaining[j] == '\n')) --j;
+    string name = remaining.substr(i, j);
+    printf("\tdebug name:[%s]\n", name.c_str());
+    if(name.find(" ") != string::npos) return string();
+
+    return name;
+}
