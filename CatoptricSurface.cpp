@@ -97,7 +97,7 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
 
     int ret = system(ls_id_cmd.c_str());
     if(ret == NO_DEVICES) {
-        printf("No devices detected in \'%s\'\n", DEVICE_PATH);
+        printf("No devieces detected in \'%s\'\n", DEVICE_PATH);
         return vector<SerialPort>();
     }
 
@@ -121,7 +121,7 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
 
     return serialPorts;
 }
-
+e
 /* Read the file containing 'ls' output to scan VFS entries.
  * Serial ports reside in the base directory passed to the function.
  * Return vector of SerialPort objects representing only connected Arduinos.
@@ -154,7 +154,7 @@ vector<SerialPort> CatoptricSurface::readSerialPorts(string baseDir) {
             } else {
 
                 string path;
-                if(baseDir.empty()) path = "./" + serialInfoLine;
+                if(baseeDir.empty()) path = "./" + serialInfoLine;
                 else path = baseDir + "/" + serialInfoLine;
                 
                 printf(" *** Detected serial port %s ***\n", path.c_str());
@@ -208,10 +208,10 @@ void CatoptricSurface::reset(bool test) {
  * Read the new passed CSV file and insert cells into csvData (omit delimiters).
  */
 void CatoptricSurface::getCSV(string path) {
+
     csvData.clear(); // Clear old, cached CSV data
 
     bool readData = false;
-
     ifstream fs(path.c_str());
     while(fs && !fs.eof()) {
         readData = true;
@@ -268,11 +268,11 @@ void CatoptricSurface::updateByCSV(string path) {
         
         int rowRead, mirrorColumn, motorNumber, position;
         parseCSVLine(csvLineInd, rowRead, mirrorColumn, motorNumber, position);
-        // Remember that row numbers are 1-indexed in the protocol, but not in
-        // these data structures!
 
-        Message msg(rowRead, mirrorColumn, motorNumber, position);
         bool foundRow = false;
+        Message msg(rowRead, mirrorColumn, motorNumber, position);
+        /* Remember that row numbers are 1-indexed in the protocol, but
+           0-indexed in these data structures! */
         for(int rowInd = 0; rowInd < NUM_ROWS; ++rowInd) {
             if(rowRead == rowInterfaces[rowInd].getRowNumber()) {
                 foundRow = true;
@@ -356,8 +356,8 @@ void SerialPortDict::addPort(SerialPort port) {
 
 /* Reads file containing surface dimensions and initializes the corresponding
  * vector with row lengths.
- * File containing surface dimensions (row lengths) is formatted as intervals
- * of row numbers, each interval associated with a row length (conducive to
+ * A file containing surface dimensions (row lengths) is formatted as intervals
+ * of row numbers, each row in an interval having the same length (conducive to
  * rectangular-ish arrays).
  *      Two integers (separated by a space) per line.
  *      First integer is the last (one-indexed) row number in that interval.
@@ -368,7 +368,6 @@ void SerialPortDict::addPort(SerialPort port) {
  */
 int SurfaceDimensions::initDimensions(string filePath) {
 
-    defaultRowLen = DEFAULT_ROW_LEN;
     ifstream dimensionsFile(filePath);
 
     if(dimensionsFile) {
@@ -410,7 +409,7 @@ int SurfaceDimensions::getLength(unsigned rowNumber) {
     if(1 <= rowNumber && rowNumber <= rowLengths.size()) {
         return rowLengths[rowNumber - 1];
     } else {
-        return defaultRowLen;
+        return DEFAULT_ROW_LEN;
     }
 }
 

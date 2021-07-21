@@ -17,6 +17,7 @@
 #define CMP_EQUAL 0
 #define SLEEP_TIME 1    /* Seconds to sleep per CatoptricSurface::run() cycle */
 
+// Typically defaulted to in functional prototype (e.g. 2x2 array)
 #define DEFAULT_ROW_LEN 2
 
 #define LS_ID_FILENAME ".serialInfo"    // Arbitrarily named
@@ -55,8 +56,6 @@ class SurfaceDimensions {
     private:
         // Number of mirrors in a row, doesn't account for alignment nor spacing
         std::vector<int> rowLengths;
-        // Typically defaulted to in functional prototype (e.g. 2x2 array)
-        int defaultRowLen;
 
     public:
         int initDimensions(std::string filePath);

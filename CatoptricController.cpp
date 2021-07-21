@@ -58,7 +58,6 @@ void CatoptricController::run() {
 
             int csvInd;
             string csv, providedName = extractName(userInput);
-            printf("\tdebug providedName:[%s]\n", providedName.c_str());
 
             if(!providedName.empty()) {
                 for(unsigned i = 0; i < newCSVs.size(); ++i) {
@@ -256,16 +255,22 @@ int CatoptricController::renameMoveFile(string src, string dest) {
  * any filename following 'run'.
  */
 string CatoptricController::extractName(string userInput) {
-    printf("\tdebug extractName, userInput[%s]\n", userInput.c_str());
     string remaining = userInput.substr(3, userInput.size());
     if(remaining.empty()) return remaining;
 
-    unsigned i = 0, j = remaining.size() - 1;
-    while(i < remaining.size() && 
-            (remaining[i] == ' ' || remaining[i] == '\n')) ++i;
-    while(j > 0 && (remaining[j] == ' ' || remaining[j] == '\n')) --j;
-    string name = remaining.substr(i, j);
-    printf("\tdebug name:[%s]\n", name.c_str());
+    unsigned left_ind = 0, right_ind = remaining.size() - 1;
+    while(left_ind < remaining.size() && 
+            (remaining[left_ind] == ' ' || remaining[left_ind] == '\n')) {
+        ++left_ind;
+    }
+    while(right_ind > 0 && 
+            (remaining[right_ind] == ' ' || remaining[right_ind] == '\n')) {
+        --right_ind;
+    }
+    
+    if(left_ind >= right_ind) return string();
+
+    string name = remaining.substr(left_ind, right_ind + 1);
     if(name.find(" ") != string::npos) return string();
 
     return name;

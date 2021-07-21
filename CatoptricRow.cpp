@@ -109,7 +109,8 @@ int CatoptricRow::setupSerial(const char *serialPortIn) {
         return ERR_TCFLUSH;
     }
     
-    sleep(SETUP_SLEEP_TIME); // Why does this function sleep?
+    // TODO : Uncomment sleep? I'm not sure why it was here originally
+    //sleep(SETUP_SLEEP_TIME); // Why does this function sleep?
 
     return RET_SUCCESS;
 }
@@ -144,7 +145,8 @@ void CatoptricRow::update() {
 		Message message = commandQueue.back();
         commandQueue.pop_back();
 		sendMessageToArduino(message);
-	    fsm.currentCommandsToArduino--;
+	    //fsm.currentCommandsToArduino--;
+        //printf("  currentCommandsToArduino decrement CatoptricRow\n");
     }
 }
 
@@ -169,6 +171,7 @@ void CatoptricRow::sendMessageToArduino(Message message) {
     printf("\n");
 
 	fsm.currentCommandsToArduino += 1; // New sent message, awaiting ack
+    printf("  currentCommandsToArduino increment CatioptricRow\n");
 }
 
 /* Push a Message onto the commandQueue to update a mirror's position.
