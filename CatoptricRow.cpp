@@ -133,7 +133,13 @@ int CatoptricRow::resetSerialBuffer() {
 void CatoptricRow::update() {
     
     char input;
+    bool readC = false;
+    // Read incoming data from Arduino
     while(read(serial_fd, &input, 1) > 0) {
+
+        if(!readC) printf("reading from serial_fd %d\n", serial_fd);
+        readC = true;
+
         fsm.Execute(input);
         if(fsm.messageReady) {
             printf("Incoming message:%s\n", fsm.message);
@@ -141,12 +147,12 @@ void CatoptricRow::update() {
         }
     }
 
+    // Send messages to Arduino
 	while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
 		Message message = commandQueue.back();
         commandQueue.pop_back();
 		sendMessageToArduino(message);
 	    //fsm.currentCommandsToArduino--;
-        //printf("  currentCommandsToArduino decrement CatoptricRow\n");
     }
 }
 
@@ -171,7 +177,8 @@ void CatoptricRow::sendMessageToArduino(Message message) {
     printf("\n");
 
 	fsm.currentCommandsToArduino += 1; // New sent message, awaiting ack
-    printf("  currentCommandsToArduino increment CatioptricRow\n");
+    printf("\tRow %d currentCommandsToArduino increment to %d CatoptricRow\n", 
+            rowNumber, fsm.currentCommandsToArduino);
 }
 
 /* Push a Message onto the commandQueue to update a mirror's position.

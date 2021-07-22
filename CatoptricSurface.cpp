@@ -23,15 +23,16 @@ void CatoptricSurface::run() {
 
     while(commandsOut > 0) {
 
+        commandsOut = 0;
         /* Each row reads incoming data and updates SerialFSM objects, 
            sends messages from the back of respective commandQueue */
         for(CatoptricRow& cr : rowInterfaces) cr.update();
 
-        commandsOut = 0;
         int commandsQueue = 0, ackCount = 0, nackCount = 0;
         
         for(CatoptricRow& cr : rowInterfaces) {
             commandsOut += cr.fsmCommandsOut();
+            printf("\tCollecting commandsOut %d (total %d)\n", cr.fsmCommandsOut(), commandsOut);
             ackCount += cr.fsmAckCount();
             nackCount += cr.fsmNackCount();
             commandsQueue += cr.commandQueue.size();
@@ -121,7 +122,7 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
 
     return serialPorts;
 }
-e
+
 /* Read the file containing 'ls' output to scan VFS entries.
  * Serial ports reside in the base directory passed to the function.
  * Return vector of SerialPort objects representing only connected Arduinos.
@@ -154,7 +155,7 @@ vector<SerialPort> CatoptricSurface::readSerialPorts(string baseDir) {
             } else {
 
                 string path;
-                if(baseeDir.empty()) path = "./" + serialInfoLine;
+                if(baseDir.empty()) path = "./" + serialInfoLine;
                 else path = baseDir + "/" + serialInfoLine;
                 
                 printf(" *** Detected serial port %s ***\n", path.c_str());

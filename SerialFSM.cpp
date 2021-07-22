@@ -136,7 +136,6 @@ char SerialFSM::getKey(char c) {
 
 char SerialFSM::getAckKey(char c) {
     if (c == 'A') {
-        printf("\tGET_ACK_KEY\n");
         return GET_ACK_X;
     } else {
         return GET_MAGIC_NUM;
@@ -164,8 +163,8 @@ char SerialFSM::getAckY(char c) {
 char SerialFSM::getAckM(char c) {
     if (c <= 2) {
         ackM = c;
-        currentCommandsToArduino -= 1; // Successful ack completed
-        printf("  currentCommandsToArduino decrement SerialFSM\n");
+        currentCommandsToArduino--; // Successful ack completed
+        printf("\tcurrentCommandsToArduino decrement to %d SerialFSM\n", currentCommandsToArduino);
         printf("\tSUCCESSFUL ACK\n");
         return GET_MAGIC_NUM;
     } else {

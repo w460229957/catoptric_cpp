@@ -3,7 +3,7 @@
 #include <vector>
 #include "SerialFSM.hpp"
 
-#define MAX_CMDS_OUT  8
+#define MAX_CMDS_OUT  32
 #define FLUSH_IN_OUT  2
 #define NUM_MSG_ELEMS 8
 #define NUM_MOTORS    2
