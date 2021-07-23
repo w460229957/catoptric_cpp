@@ -110,7 +110,7 @@ void SerialFSM::clearMsg() {
 char SerialFSM::getMagicNum(char c) {
     resetVariables();
     if (c == '!') {
-        printf("GET_MAGIC_NUM\n");
+        //printf("GET_MAGIC_NUM\n");
         return GET_KEY;
     } else {
         return GET_MAGIC_NUM;
@@ -119,15 +119,15 @@ char SerialFSM::getMagicNum(char c) {
     
 char SerialFSM::getKey(char c) {
     if (c == 'a') {
-        printf("\tGET_KEY ack\n");
+        //printf("\tGET_KEY ack\n");
         ackCount += 1;
         return GET_ACK_KEY;
     } else if (c == 'b') {
-        printf("\tGET_KEY nack\n");
+        //printf("\tGET_KEY nack\n");
         nackCount += 1;
         return GET_NACK_KEY;
     } else if (c == 'c') {
-        printf("\tGET_KEY msg\n");
+        //printf("\tGET_KEY msg\n");
         return GET_NUM_CHAR_HIGH;
     } else {
         return GET_MAGIC_NUM;
@@ -164,8 +164,8 @@ char SerialFSM::getAckM(char c) {
     if (c <= 2) {
         ackM = c;
         currentCommandsToArduino--; // Successful ack completed
-        printf("\tcurrentCommandsToArduino decrement to %d SerialFSM\n", currentCommandsToArduino);
-        printf("\tSUCCESSFUL ACK\n");
+        //printf("\tcurrentCommandsToArduino decrement to %d SerialFSM\n", currentCommandsToArduino);
+        //printf("\tSUCCESSFUL ACK\n");
         return GET_MAGIC_NUM;
     } else {
         return GET_MAGIC_NUM;

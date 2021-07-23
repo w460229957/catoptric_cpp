@@ -49,9 +49,7 @@ void CatoptricController::run() {
             surface.reset(NO_TEST_RESET);
             printf(" -- Reset Complete\n");
         } else if(userInput.compare("test") == STR_EQUAL) {
-            surface.cca(string("CC test conditional before"));
             surface.reset(TEST_RESET);
-            surface.cca(string("CC test conditional after"));
             printf("\tBEWARE: Orientation of mirrors is no longer "
                     "guaranteed!\n");
             printf(" -- Test Complete\n");

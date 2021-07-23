@@ -17,27 +17,16 @@ using namespace std;
  * Send a Message object from the back of the commandQueue to the Arduino.
  */
 void CatoptricRow::update() {
-    printf("row %d update:\n", rowNumber);
     // Send messages to Arduino (sends messages from all rows)
 	while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
 		Message message = commandQueue.back();
         commandQueue.pop_back();
 		sendMessageToArduino(message);
-	    //fsm.currentCommandsToArduino--;
     }
     
-    printf("row %d currentCommandsToArduino %d (mid update)\n", rowNumber, 
-            fsm.currentCommandsToArduino);
-
     char input;
-    bool readC = false;
     // Read incoming data from Arduino
     while(read(serial_fd, &input, 1) > 0) {
-
-        if(!readC) printf("reading from serial_fd %d\nReceived:", serial_fd);
-        readC = true;
-
-        printf("%d(%c) ", input, input);
 
         fsm.Execute(input);
         if(fsm.messageReady) {
@@ -45,10 +34,6 @@ void CatoptricRow::update() {
             fsm.clearMsg();
         }
     }
-
-    if(readC) printf("\n");
-    printf("row %d currentCommandsToArduino %d (end update)\n", rowNumber, 
-            fsm.currentCommandsToArduino);
 }
 
 CatoptricRow::CatoptricRow() {}
@@ -72,8 +57,6 @@ CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn,
 
     // Create FSM for communication with this Arduino.
 	fsm = SerialFSM();
-
-    printf("Row %d, serial_fd %d\n", rowNumber, serial_fd);
 }
 
 /* Prepare the correpsonding serial port for IO (termios).
@@ -90,7 +73,7 @@ int CatoptricRow::setupSerial(const char *serialPortIn) {
     }
     
     // TODO : Uncomment sleep? I'm not sure why it was here originally
-    //sleep(SETUP_SLEEP_TIME); // Why does this function sleep?
+    sleep(SETUP_SLEEP_TIME); // Why does this function sleep?
 
     return RET_SUCCESS;
 }
@@ -128,8 +111,8 @@ void CatoptricRow::sendMessageToArduino(Message message) {
     printf("\n");
 
 	fsm.currentCommandsToArduino += 1; // New sent message, awaiting ack
-    printf("\tRow %d currentCommandsToArduino increment to %d CatoptricRow\n", 
-            rowNumber, fsm.currentCommandsToArduino);
+    //printf("\tRow %d currentCommandsToArduino increment to %d CatoptricRow\n", 
+            //rowNumber, fsm.currentCommandsToArduino);
 }
 
 /* Push a Message onto the commandQueue to update a mirror's position.
@@ -182,7 +165,8 @@ void CatoptricRow::reorientMirrorAxis(Message command) {
 void CatoptricRow::reset(bool test) {
     // Column numbers seem to not be 0-indexed on the Arduino?
     //
-    printf("row %d CCA %d (CR reset)\n", rowNumber, fsm.currentCommandsToArduino);
+   // printf("row %d CCA %d (CR reset)\n", rowNumber, 
+           // fsm.currentCommandsToArduino);
 
     if(test) {
         for(int i = 0; i < numMirrors; ++i) {
@@ -201,6 +185,8 @@ void CatoptricRow::reset(bool test) {
     }
 
     update();
+    //printf("row %d CCA %d (CR end-reset)\n", rowNumber, 
+            //fsm.currentCommandsToArduino);
 }
 
 /* Get the SerialFSM's currentCommandsToArduino */

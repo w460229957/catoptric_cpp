@@ -13,7 +13,7 @@
 using namespace std;
 
 void CatoptricSurface::cca(string loc) {
-    printf("row %d cca %d\trow %d cca %d: %s\n", 
+    printf("\t\trow %d cca %d\trow %d cca %d: %s\n", 
             rowInterfaces[0].getRowNumber(),
             rowInterfaces[0].fsmCommandsOut(), 
             rowInterfaces[1].getRowNumber(),
@@ -34,15 +34,12 @@ void CatoptricSurface::run() {
         commandsOut = 0;
         /* Each row reads incoming data and updates SerialFSM objects, 
            sends messages from the back of respective commandQueue */
-        cca(string("CS run pre-update"));
         for(CatoptricRow& cr : rowInterfaces) cr.update();
 
-        cca(string("CS run post-update"));
         int commandsQueue = 0, ackCount = 0, nackCount = 0;
         
         for(CatoptricRow& cr : rowInterfaces) {
             commandsOut += cr.fsmCommandsOut();
-            printf("\tCollecting commandsOut %d (total %d)\n", cr.fsmCommandsOut(), commandsOut);
             ackCount += cr.fsmAckCount();
             nackCount += cr.fsmNackCount();
             commandsQueue += cr.commandQueue.size();
@@ -50,19 +47,16 @@ void CatoptricSurface::run() {
 
         updates++;
         sleep(SLEEP_TIME);
-        /*printf("\r%d commands out | %d commands in queue | %d acks | %d nacks "
+        printf("\r%d commands out | %d commands in queue | %d acks | %d nacks "
                 "| %d cycles \r", commandsOut, commandsQueue, ackCount, 
-                nackCount, updates);*/
-        printf("%d commands out | %d commands in queue | %d acks | %d nacks "
-                "| %d cycles \n", commandsOut, commandsQueue, ackCount, 
                 nackCount, updates);
+    }
 
-        for(CatoptricRow& cr : rowInterfaces) {
-            cr.fsm.ackCount = 0;
-            cr.fsm.nackCount = 0;
-        }
+    printf("\n");
 
-        printf("\n\n");
+    for(CatoptricRow& cr : rowInterfaces) {
+        cr.fsm.ackCount = 0;
+        cr.fsm.nackCount = 0;
     }
 }
 
@@ -70,6 +64,7 @@ CatoptricSurface::CatoptricSurface() {
 
     SERIAL_INFO_PREFIX = SERIAL_INFO_PREFIX_MACRO;
 
+    setbuf(stdout, NULL);
     // TODO : Un-hardcode these serial numbers, read them from file
     /*serialPortOrder.addPort(SerialPort("8543931323035121E170", 1));
     serialPortOrder.addPort(SerialPort("8543931323035130C092", 2));
@@ -98,6 +93,8 @@ CatoptricSurface::CatoptricSurface() {
     
     dimensions.initDimensions(DIMENSIONS_FILENAME);
     setupRowInterfaces();
+    sleep(2);
+    printf(" -- CS constructor resetting...\n");
     reset(false);
 }
 
@@ -111,7 +108,7 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
 
     int ret = system(ls_id_cmd.c_str());
     if(ret == NO_DEVICES) {
-        printf("No devieces detected in \'%s\'\n", DEVICE_PATH);
+        printf("No devices detected in \'%s\'\n", DEVICE_PATH);
         return vector<SerialPort>();
     }
 
@@ -211,9 +208,10 @@ void CatoptricSurface::reset(bool test) {
     if(!test) printf(" -- Resetting all mirrors to default position\n");
     else printf(" -- Testing all motors\n");
 
-    for(CatoptricRow cr : rowInterfaces) {
+    for(CatoptricRow& cr : rowInterfaces) {
+        //cca(string("CS pre-CR-reset"));
         cr.reset(test); // Reset whole row
-        cca(string("CS post-CR-reset"));
+        //cca(string("CS post-CR-reset"));
     }
 
     run();
@@ -274,7 +272,7 @@ void CatoptricSurface::updateByCSV(string path) {
 
     getCSV(path);   // Read in CSV contents to csvData
 
-    for(CatoptricRow cr : rowInterfaces) {
+    for(CatoptricRow& cr : rowInterfaces) {
         cr.resetSerialBuffer();
     }
 
@@ -429,5 +427,5 @@ int SurfaceDimensions::getLength(unsigned rowNumber) {
 }
 
 void CatoptricSurface::cleanup() {
-    for(CatoptricRow cr : rowInterfaces) cr.cleanup();
+    for(CatoptricRow& cr : rowInterfaces) cr.cleanup();
 }
