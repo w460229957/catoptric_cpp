@@ -111,8 +111,6 @@ void CatoptricRow::sendMessageToArduino(Message message) {
     printf("\n");
 
 	fsm.currentCommandsToArduino += 1; // New sent message, awaiting ack
-    //printf("\tRow %d currentCommandsToArduino increment to %d CatoptricRow\n", 
-            //rowNumber, fsm.currentCommandsToArduino);
 }
 
 /* Push a Message onto the commandQueue to update a mirror's position.

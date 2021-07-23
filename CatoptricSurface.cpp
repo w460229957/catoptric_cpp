@@ -12,12 +12,10 @@
 
 using namespace std;
 
-void CatoptricSurface::cca(string loc) {
-    printf("\t\trow %d cca %d\trow %d cca %d: %s\n", 
-            rowInterfaces[0].getRowNumber(),
-            rowInterfaces[0].fsmCommandsOut(), 
-            rowInterfaces[1].getRowNumber(),
-            rowInterfaces[1].fsmCommandsOut(), loc.c_str());
+void drawProgressBar(int total, int ackd) {
+    for(int i = 0; i < ackd; ++i) printf("|||");
+    for(int i = 0; i < total - ackd; ++i) printf("---");
+    printf("]");
 }
 
 /* Each row reads incoming data and updates its SerialFSM object, sends queued
@@ -48,11 +46,13 @@ void CatoptricSurface::run() {
         updates++;
         sleep(RUN_SLEEP_TIME);
         printf("\r%d commands out | %d commands in queue | %d acks | %d nacks "
-                "| %d cycles", commandsOut, commandsQueue, ackCount, 
+                "| %d cycles\n", commandsOut, commandsQueue, ackCount, 
                 nackCount, updates);
+        drawProgressBar(commandsOut + ackCount, ackCount);
+        printf("\033[F");
     }
 
-    printf("\n");
+    printf("\n\n");
 
     for(CatoptricRow& cr : rowInterfaces) {
         cr.fsm.ackCount = 0;
