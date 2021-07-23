@@ -59,6 +59,8 @@ void CatoptricController::run() {
             int csvInd;
             string csv, providedName = extractName(userInput);
 
+            csv = newCSVs[0];
+            csvInd = 0;
             if(!providedName.empty()) {
                 for(unsigned i = 0; i < newCSVs.size(); ++i) {
                     if(newCSVs[i].compare(providedName) == STR_EQUAL) {
@@ -67,9 +69,6 @@ void CatoptricController::run() {
                         break;
                     }
                 }
-            } else if(providedName.empty()) {
-                csv = newCSVs[0];
-                csvInd = 0;
             }
 
             // Removes the csvInd'th element

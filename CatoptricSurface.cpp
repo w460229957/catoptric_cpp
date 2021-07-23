@@ -48,7 +48,7 @@ void CatoptricSurface::run() {
         updates++;
         sleep(RUN_SLEEP_TIME);
         printf("\r%d commands out | %d commands in queue | %d acks | %d nacks "
-                "| %d cycles \r", commandsOut, commandsQueue, ackCount, 
+                "| %d cycles", commandsOut, commandsQueue, ackCount, 
                 nackCount, updates);
     }
 
