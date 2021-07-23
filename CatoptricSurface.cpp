@@ -46,7 +46,7 @@ void CatoptricSurface::run() {
         }
 
         updates++;
-        sleep(SLEEP_TIME);
+        sleep(RUN_SLEEP_TIME);
         printf("\r%d commands out | %d commands in queue | %d acks | %d nacks "
                 "| %d cycles \r", commandsOut, commandsQueue, ackCount, 
                 nackCount, updates);
@@ -93,7 +93,7 @@ CatoptricSurface::CatoptricSurface() {
     
     dimensions.initDimensions(DIMENSIONS_FILENAME);
     setupRowInterfaces();
-    sleep(2);
+    sleep(SETUP_SLEEP_TIME);
     printf(" -- CS constructor resetting...\n");
     reset(false);
 }

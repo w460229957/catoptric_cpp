@@ -15,7 +15,8 @@
 #define CMD_LEN 100
 #define SYSTEM_SUCCESS 0
 #define CMP_EQUAL 0
-#define SLEEP_TIME 1    /* Seconds to sleep per CatoptricSurface::run() cycle */
+#define SETUP_SLEEP_TIME 2
+#define RUN_SLEEP_TIME .5   /* Seconds to sleep per CatoptricSurface::run() cycle */
 
 // Typically defaulted to in functional prototype (e.g. 2x2 array)
 #define DEFAULT_ROW_LEN 2
