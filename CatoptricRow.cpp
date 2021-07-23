@@ -12,67 +12,43 @@
 
 using namespace std;
 
-MotorState::MotorState() {
-    motor[PAN_IND] = 0;
-    motor[TILT_IND] = 0;
-}
-
-MotorState::MotorState(int panIn, int tiltIn) {
-    motor[PAN_IND] = panIn;
-    motor[TILT_IND] = tiltIn;
-}
-
-Message::Message(int row_in, int mirror_in, int motor_in, int dir_in, 
-        int chigh_in, int clow_in) {
-    rowNum = row_in;
-    mirrorID = mirror_in;
-    whichMotor = motor_in;
-    direction = dir_in;
-    countHigh = chigh_in;
-    countLow = clow_in;
-}
-
-Message::Message(int mirrorRow, int mirrorColumn, int motorNumber, 
-        int position) {
-    rowNum = mirrorRow;
-    mirrorID = mirrorColumn;
-    whichMotor = motorNumber;
-    newPos = position;
-}
-
-/* Convert the message into a serialized byte vector that can be sent to
- * the Arduino.
+/* Read all input from the corresponding serial port and update the CatoptricRow
+ * object's SerialFSM object.
+ * Send a Message object from the back of the commandQueue to the Arduino.
  */
-vector<char> Message::toVec() {
+void CatoptricRow::update() {
+    printf("row %d update:\n", rowNumber);
+    // Send messages to Arduino (sends messages from all rows)
+	while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
+		Message message = commandQueue.back();
+        commandQueue.pop_back();
+		sendMessageToArduino(message);
+	    //fsm.currentCommandsToArduino--;
+    }
+    
+    printf("row %d currentCommandsToArduino %d (mid update)\n", rowNumber, 
+            fsm.currentCommandsToArduino);
 
-    vector<char> msgVec;
-    msgVec.push_back(MSG_MAGIC_NUM);
-    msgVec.push_back(ACK_KEY);
-    msgVec.push_back(rowNum);
-    msgVec.push_back(mirrorID);
-    msgVec.push_back(whichMotor);
-    msgVec.push_back(direction);
-    msgVec.push_back(countHigh);
-    msgVec.push_back(countLow);
+    char input;
+    bool readC = false;
+    // Read incoming data from Arduino
+    while(read(serial_fd, &input, 1) > 0) {
 
-    return msgVec;
-}
+        if(!readC) printf("reading from serial_fd %d\nReceived:", serial_fd);
+        readC = true;
 
-/* Convert the Message object into a string containing what will be transmitted.
- */
-string Message::toStr() {
+        printf("%d(%c) ", input, input);
 
-    string str;
-    try {
-        str = to_string(MSG_MAGIC_NUM) + to_string(ACK_KEY) + 
-            to_string(rowNum) + to_string(mirrorID) + to_string(whichMotor) +
-            to_string(direction) + to_string(countHigh) + to_string(countLow);
-    } catch (...) {
-        printf("to_string error: %s\n", strerror(errno));
-        return string();
+        fsm.Execute(input);
+        if(fsm.messageReady) {
+            printf("Incoming message:%s\n", fsm.message);
+            fsm.clearMsg();
+        }
     }
 
-    return str;
+    if(readC) printf("\n");
+    printf("row %d currentCommandsToArduino %d (end update)\n", rowNumber, 
+            fsm.currentCommandsToArduino);
 }
 
 CatoptricRow::CatoptricRow() {}
@@ -92,8 +68,12 @@ CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn,
 	// Configure the relevant serial port for communication
 	setupSerial(serialPortIn);
 
+    resetSerialBuffer();
+
     // Create FSM for communication with this Arduino.
 	fsm = SerialFSM();
+
+    printf("Row %d, serial_fd %d\n", rowNumber, serial_fd);
 }
 
 /* Prepare the correpsonding serial port for IO (termios).
@@ -126,35 +106,6 @@ int CatoptricRow::resetSerialBuffer() {
     return RET_SUCCESS;
 }
 
-/* Read all input from the corresponding serial port and update the CatoptricRow
- * object's SerialFSM object.
- * Send a Message object from the back of the commandQueue to the Arduino.
- */
-void CatoptricRow::update() {
-    
-    char input;
-    bool readC = false;
-    // Read incoming data from Arduino
-    while(read(serial_fd, &input, 1) > 0) {
-
-        if(!readC) printf("reading from serial_fd %d\n", serial_fd);
-        readC = true;
-
-        fsm.Execute(input);
-        if(fsm.messageReady) {
-            printf("Incoming message:%s\n", fsm.message);
-            fsm.clearMsg();
-        }
-    }
-
-    // Send messages to Arduino
-	while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
-		Message message = commandQueue.back();
-        commandQueue.pop_back();
-		sendMessageToArduino(message);
-	    //fsm.currentCommandsToArduino--;
-    }
-}
 
 /* Transmit the passed Message to the Arduino.
  */
@@ -230,6 +181,8 @@ void CatoptricRow::reorientMirrorAxis(Message command) {
  */
 void CatoptricRow::reset(bool test) {
     // Column numbers seem to not be 0-indexed on the Arduino?
+    //
+    printf("row %d CCA %d (CR reset)\n", rowNumber, fsm.currentCommandsToArduino);
 
     if(test) {
         for(int i = 0; i < numMirrors; ++i) {
@@ -271,6 +224,70 @@ int CatoptricRow::getRowNumber() {
 }
 
 void CatoptricRow::cleanup() {
+    resetSerialBuffer();
     close(serial_fd);
     fsm.clearMsg();
+}
+
+MotorState::MotorState() {
+    motor[PAN_IND] = 0;
+    motor[TILT_IND] = 0;
+}
+
+MotorState::MotorState(int panIn, int tiltIn) {
+    motor[PAN_IND] = panIn;
+    motor[TILT_IND] = tiltIn;
+}
+
+Message::Message(int row_in, int mirror_in, int motor_in, int dir_in, 
+        int chigh_in, int clow_in) {
+    rowNum = row_in;
+    mirrorID = mirror_in;
+    whichMotor = motor_in;
+    direction = dir_in;
+    countHigh = chigh_in;
+    countLow = clow_in;
+}
+
+Message::Message(int mirrorRow, int mirrorColumn, int motorNumber, 
+        int position) {
+    rowNum = mirrorRow;
+    mirrorID = mirrorColumn;
+    whichMotor = motorNumber;
+    newPos = position;
+}
+
+/* Convert the message into a serialized byte vector that can be sent to
+ * the Arduino.
+ */
+vector<char> Message::toVec() {
+
+    vector<char> msgVec;
+    msgVec.push_back(MSG_MAGIC_NUM);
+    msgVec.push_back(ACK_KEY);
+    msgVec.push_back(rowNum);
+    msgVec.push_back(mirrorID);
+    msgVec.push_back(whichMotor);
+    msgVec.push_back(direction);
+    msgVec.push_back(countHigh);
+    msgVec.push_back(countLow);
+
+    return msgVec;
+}
+
+/* Convert the Message object into a string containing what will be transmitted.
+ */
+string Message::toStr() {
+
+    string str;
+    try {
+        str = to_string(MSG_MAGIC_NUM) + to_string(ACK_KEY) + 
+            to_string(rowNum) + to_string(mirrorID) + to_string(whichMotor) +
+            to_string(direction) + to_string(countHigh) + to_string(countLow);
+    } catch (...) {
+        printf("to_string error: %s\n", strerror(errno));
+        return string();
+    }
+
+    return str;
 }

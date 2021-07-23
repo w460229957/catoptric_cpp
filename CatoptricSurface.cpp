@@ -12,6 +12,14 @@
 
 using namespace std;
 
+void CatoptricSurface::cca(string loc) {
+    printf("row %d cca %d\trow %d cca %d: %s\n", 
+            rowInterfaces[0].getRowNumber(),
+            rowInterfaces[0].fsmCommandsOut(), 
+            rowInterfaces[1].getRowNumber(),
+            rowInterfaces[1].fsmCommandsOut(), loc.c_str());
+}
+
 /* Each row reads incoming data and updates its SerialFSM object, sends queued
  * message to its Arduino.
  * Sleep and print update message.
@@ -26,8 +34,10 @@ void CatoptricSurface::run() {
         commandsOut = 0;
         /* Each row reads incoming data and updates SerialFSM objects, 
            sends messages from the back of respective commandQueue */
+        cca(string("CS run pre-update"));
         for(CatoptricRow& cr : rowInterfaces) cr.update();
 
+        cca(string("CS run post-update"));
         int commandsQueue = 0, ackCount = 0, nackCount = 0;
         
         for(CatoptricRow& cr : rowInterfaces) {
@@ -40,8 +50,11 @@ void CatoptricSurface::run() {
 
         updates++;
         sleep(SLEEP_TIME);
-        printf("\r%d commands out | %d commands in queue | %d acks | %d nacks "
+        /*printf("\r%d commands out | %d commands in queue | %d acks | %d nacks "
                 "| %d cycles \r", commandsOut, commandsQueue, ackCount, 
+                nackCount, updates);*/
+        printf("%d commands out | %d commands in queue | %d acks | %d nacks "
+                "| %d cycles \n", commandsOut, commandsQueue, ackCount, 
                 nackCount, updates);
 
         for(CatoptricRow& cr : rowInterfaces) {
@@ -200,6 +213,7 @@ void CatoptricSurface::reset(bool test) {
 
     for(CatoptricRow cr : rowInterfaces) {
         cr.reset(test); // Reset whole row
+        cca(string("CS post-CR-reset"));
     }
 
     run();

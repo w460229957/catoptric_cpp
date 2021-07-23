@@ -96,4 +96,5 @@ class CatoptricSurface {
         void reset(bool test);
         void updateByCSV(std::string path);
         void cleanup();
+        void cca(std::string loc);
 };
