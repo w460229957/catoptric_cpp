@@ -16,14 +16,16 @@
 #define SYSTEM_SUCCESS 0
 #define CMP_EQUAL 0
 #define SETUP_SLEEP_TIME 2
-#define RUN_SLEEP_TIME .5   /* Seconds to sleep per CatoptricSurface::run() cycle */
+#define RUN_SLEEP_TIME 1   /* Sleep secs (int) per 
+                              CatopricSurface::run() cycle */
 
 // Typically defaulted to in functional prototype (e.g. 2x2 array)
 #define DEFAULT_ROW_LEN 2
 
-#define LS_ID_FILENAME ".serialInfo"    // Arbitrarily named
-#define LS_WC_FILENAME ".numFiles"      // Arbitrarily named
-#define LS_CSV_FILENAME ".csvSearch"    // Arbitrarily named
+#define LS_ID_FILENAME ".serialInfo"  // Will be created if absent
+#define LS_WC_FILENAME ".numFiles"    // Will be created if absent
+#define LS_CSV_FILENAME ".csvSearch"  // Will be created if absent
+#define ARDUINO_IDS_MAP_FILENAME "ids_map"          // Must be present in dir
 #define DIMENSIONS_FILENAME "surface_dimensions"    // Must be present in dir
 #define SERIAL_INFO_PREFIX_MACRO "usb-Arduino__www.arduino.cc__0043_"
 #define DEVICE_PATH "/dev/serial/by-id"
@@ -90,6 +92,7 @@ class CatoptricSurface {
                 std::istream& str);
         void parseCSVLine(int csvLineInd, int& rowRead, 
                 int& mirrorColumn, int& motorNumber, int& position);
+        int initSerialPortOrder(std::string portsMapFile);
 
     public:
         CatoptricSurface();
@@ -99,3 +102,5 @@ class CatoptricSurface {
         void cleanup();
         void cca(std::string loc);
 };
+
+void drawProgressBar(int total, int ackd);

@@ -12,12 +12,6 @@
 
 using namespace std;
 
-void drawProgressBar(int total, int ackd) {
-    for(int i = 0; i < ackd; ++i) printf("|||");
-    for(int i = 0; i < total - ackd; ++i) printf("---");
-    printf("]");
-}
-
 /* Each row reads incoming data and updates its SerialFSM object, sends queued
  * message to its Arduino.
  * Sleep and print update message.
@@ -64,38 +58,51 @@ CatoptricSurface::CatoptricSurface() {
 
     SERIAL_INFO_PREFIX = SERIAL_INFO_PREFIX_MACRO;
 
-    setbuf(stdout, NULL);
-    // TODO : Un-hardcode these serial numbers, read them from file
-    /*serialPortOrder.addPort(SerialPort("8543931323035121E170", 1));
-    serialPortOrder.addPort(SerialPort("8543931323035130C092", 2));
-    serialPortOrder.addPort(SerialPort("85439313230351610262", 3));
-    serialPortOrder.addPort(SerialPort("75435353934351D052C0", 4));
-    serialPortOrder.addPort(SerialPort("85436323631351509171", 5));
-    serialPortOrder.addPort(SerialPort("75435353934351F0C020", 6));
-    serialPortOrder.addPort(SerialPort("8543931333035160E081", 7));
-    serialPortOrder.addPort(SerialPort("85439313230351818090", 8));
-    serialPortOrder.addPort(SerialPort("755333434363519171F0", 9));
-    serialPortOrder.addPort(SerialPort("8543931333035160F102", 10));
-    serialPortOrder.addPort(SerialPort("8543931323035161B021", 11));
-    serialPortOrder.addPort(SerialPort("85439313330351D03160", 12));
-    serialPortOrder.addPort(SerialPort("85439303133351716221", 13));
-    serialPortOrder.addPort(SerialPort("85436323631351300201", 14));
-    serialPortOrder.addPort(SerialPort("75435353934351E07072", 15));
-    serialPortOrder.addPort(SerialPort("8543931323035170D0C2", 16));
-    serialPortOrder.addPort(SerialPort("854393133303518072A1", 33));*/
-
-    // TODO : DELETE THESE FOLLOWING TWO LINES, only exists for testing purposes
-    serialPortOrder.addPort(SerialPort("75435353934351E01131", 1));
-    serialPortOrder.addPort(SerialPort("75833313633351318042", 2));
+    initSerialPortOrder(ARDUINO_IDS_MAP_FILENAME);
 
     serialPorts = getOrderedSerialPorts();
     numRowsConnected = serialPorts.size();
     
     dimensions.initDimensions(DIMENSIONS_FILENAME);
     setupRowInterfaces();
+    
     sleep(SETUP_SLEEP_TIME);
-    printf(" -- CS constructor resetting...\n");
+
+    setbuf(stdout, NULL);
     reset(false);
+}
+
+/* Reads a config file to populate the map of Arduino USB ids to row numbers.
+ * Each line in the config file is a serial number followed by a space and
+ * then the respective row number.
+ */
+int CatoptricSurface::initSerialPortOrder(string portsMapFilename) {
+
+    fstream portsMapStream;
+    portsMapStream.open(portsMapFilename.c_str(), ios::in);
+    string line, arduino_id_str, row_str;
+    int row_int;
+    if(portsMapStream.is_open()) {
+        while(getline(portsMapStream, line)) {
+            istringstream iss(line);
+            iss >> arduino_id_str;
+            iss >> row_str;
+            try {
+                row_int = stoi(row_str);
+            } catch(...) {
+                printf("Ill-formatted row number in %s\n", 
+                        ARDUINO_IDS_MAP_FILENAME);
+                return ERR_STOI;
+            }
+
+            serialPortOrder.addPort(
+                    SerialPort(arduino_id_str.c_str(), row_int));
+        }
+
+        portsMapStream.close();
+    }
+    
+    return RET_SUCCESS;
 }
 
 /* Returns a vector of SerialPort objects each representing a connected Arduino,
@@ -174,8 +181,8 @@ vector<SerialPort> CatoptricSurface::readSerialPorts(string baseDir) {
             }
         }
 
+        serialInfoFile.close();
     }
-    serialInfoFile.close();
 
     return serialPorts;
 }
@@ -428,4 +435,10 @@ int SurfaceDimensions::getLength(unsigned rowNumber) {
 
 void CatoptricSurface::cleanup() {
     for(CatoptricRow& cr : rowInterfaces) cr.cleanup();
+}
+
+void drawProgressBar(int total, int ackd) {
+    for(int i = 0; i < ackd; ++i) printf("|||");
+    for(int i = 0; i < total - ackd; ++i) printf("---");
+    printf("]");
 }
