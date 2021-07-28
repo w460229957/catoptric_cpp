@@ -28,25 +28,27 @@ void CatoptricController::run() {
 
     while(CONTROLLER_RUNNING) { // Infinite event loop
 
-        string inputMsg = "\'Reset\' mirrors, 'Test' motors, or upload a"
-                          " file to run: ";
-
         // Retrieve any new CSV files
         checkForNewCSV();
 
         printf("\n-------------------------\n\n");
 
+        string inputMsg = "\'Reset\' mirrors, 'Test' motors, or 'Check' for a"
+                          " new file to run: ";
+
         if(newCSVs.size() > 0) {
             inputMsg = "\'Reset\' mirrors, 'Test' motors, or \'Run\' file: ";
         }
 
-        string userInput = getUserInput(inputMsg);
+        string userInput = getUserInput(inputMsg); // Converts to lowercase
 
-        if (userInput.compare("quit") == STR_EQUAL) {
+        if(userInput.compare("quit") == STR_EQUAL) {
             surface.cleanup(); // Free resources
             return;
+        } else if(userInput.compare("check") == STR_EQUAL) {
+            checkForNewCSV();
         } else if(userInput.compare("reset") == STR_EQUAL) {
-            surface.reset(NO_TEST_RESET);
+            surface.reset(REGULAR_RESET);
             printf(" -- Reset Complete\n");
         } else if(userInput.compare("test") == STR_EQUAL) {
             surface.reset(TEST_RESET);
@@ -56,51 +58,74 @@ void CatoptricController::run() {
         } else if(newCSVs.size() > 0 && 
                 userInput.substr(0, 3).compare("run") == STR_EQUAL) {
 
-            int csvInd;
-            string csv, providedName = extractName(userInput);
+            string providedName = extractName(userInput);
+            // Arbitrary default choice if providedName isn't found
+            int csvInd = 0; 
+            string csvName = newCSVs[csvInd];
 
-            csv = newCSVs[0];
-            csvInd = 0;
-            if(!providedName.empty()) {
-                for(unsigned i = 0; i < newCSVs.size(); ++i) {
-                    if(newCSVs[i].compare(providedName) == STR_EQUAL) {
-                        csvInd = i;
-                        csv = providedName;
-                        break;
-                    }
-                }
-            }
+            // If providedName is in newCSVs, set csvInd and csv accordingly
+            findCSV(csvInd, csvName, providedName);
 
             // Removes the csvInd'th element
             newCSVs.erase(next(newCSVs.begin(), csvInd));
 
-            printf(" -- Running \'%s\'\n", csv.c_str());
+            printf(" -- Running \'%s\'\n", csvName.c_str());
             
-            string newCsvDir = NEW_CSV_DIR;
-            string csvPath = newCsvDir + "/" + csv;
+            // NEW_CSV_DIR is the dir for CSVs that haven't been executed
+            string csvPath = NEW_CSV_DIR "/" + csvName;
 
             // Update mirrors' orientations based on CSV contents
             surface.updateByCSV(csvPath); 
-            printf(" -- \'%s\' ran successfully\n", csv.c_str());
+            printf(" -- \'%s\' ran successfully\n", csvName.c_str());
 
-            // Find the number of files in csv/archive
-            string archiveDir = ARCHIVE_DIR;
-            int archiveLength = getNumFiles(archiveDir);
-            if(archiveLength < 0) {
-                printf("Error in getNumFiles\n");
-                return;
-            }
-
-            // Rename + move CSV file to csv/archive
-            string newName = archiveDir + "/" + to_string(archiveLength) + 
-                "_" + csv;
-            if(renameMoveFile(csvPath, newName) < 0) {
-                printf("Error in renameMoveFile\n");
-                return;
-            }
-
-            printf(" -- \'%s\' moved to archive\n", csv.c_str());
+            // Renames & archives the csv
+            archiveCSV(csvPath, csvName);
         }
+    }
+}
+
+/* Renames and moves the passed file to the archive, appending a prefix to the
+ * filename based on how many files are already archived.
+ */
+void CatoptricController::archiveCSV(string csvPath, string csv) {
+
+    // Find the number of files in csv/archive
+    string archiveDir = ARCHIVE_DIR;
+    int archiveLength = getNumFiles(archiveDir);
+    if(archiveLength < 0) {
+        printf("Error in getNumFiles\n");
+        return;
+    }
+
+    // Rename + move CSV file to csv/archive
+    string newName = archiveDir + "/" + to_string(archiveLength) + 
+        "_" + csv;
+    if(renameMoveFile(csvPath, newName) < 0) {
+        printf("Error in renameMoveFile\n");
+        return;
+    }
+
+    printf(" -- \'%s\' moved to archive\n", csv.c_str());
+
+}
+
+/* Seeks the passed CSV in newCSVs and updates csvInd & csvName accordingly if
+ * it's found.
+ */
+void CatoptricController::findCSV(
+        int& csvInd, string& csvName, string targetName) {
+
+    if(!targetName.empty()) {
+        for(unsigned i = 0; i < newCSVs.size(); ++i) {
+            if(newCSVs[i].compare(targetName) == STR_EQUAL) {
+                csvInd = i;
+                csvName = targetName;
+                break;
+            }
+        }
+    } else {
+        printf("Error: findCSV providedName is empty\n");
+        return;
     }
 }
 
