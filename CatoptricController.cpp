@@ -89,6 +89,9 @@ void CatoptricController::run() {
  */
 void CatoptricController::archiveCSV(string csvPath, string csv) {
 
+    // The archive directory sometimes mysteriously disappears?
+    system("mkdir -p csv/archive");
+
     // Find the number of files in csv/archive
     string archiveDir = ARCHIVE_DIR;
     int archiveLength = getNumFiles(archiveDir);
@@ -123,9 +126,6 @@ void CatoptricController::findCSV(
                 break;
             }
         }
-    } else {
-        printf("Error: findCSV providedName is empty\n");
-        return;
     }
 }
 
