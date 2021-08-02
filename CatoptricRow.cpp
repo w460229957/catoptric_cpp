@@ -52,11 +52,7 @@ CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn,
 
 	// Configure the relevant serial port for communication
 	setupSerial(serialPortIn);
-
     resetSerialBuffer();
-
-    // Create FSM for communication with this Arduino.
-	fsm = SerialFSM();
 }
 
 /* Prepare the correpsonding serial port for IO (termios).
@@ -67,13 +63,9 @@ int CatoptricRow::setupSerial(const char *serialPortIn) {
     serial_fd = prep_serial(serialPortIn); 
     
     // Flush residual data in buffer
-    if(tcflush(serial_fd, TCIOFLUSH) < 0) {
-        printf("tcflush error: %s\n", strerror(errno));
-        return ERR_TCFLUSH;
-    }
+    resetSerialBuffer();
     
-    // TODO : Uncomment sleep? I'm not sure why it was here originally
-    sleep(SETUP_SLEEP_TIME); // Why does this function sleep?
+    sleep(SETUP_SLEEP_TIME); // It's unclear why this function must sleep
 
     return RET_SUCCESS;
 }
@@ -118,6 +110,8 @@ void CatoptricRow::sendMessageToArduino(Message message) {
 void CatoptricRow::stepMotor(int mirrorID, int whichMotor, 
         int direction, float deltaPos) {
 
+    if(deltaPos < 0) deltaPos *= -1;
+
     // I assume there's 513 steps in the motor?
 	int deltaPosInt = (int) (deltaPos * (513.0/360.0));
 	int countLow = ((int) deltaPosInt) & 255;
@@ -138,7 +132,7 @@ void CatoptricRow::reorientMirrorAxis(Message command) {
     int mirror = command.mirrorID;
     int motor = command.whichMotor;
     int newState = command.newPos;
-    int currentState = -1; // Placeholder value to silence compiler warnings :/
+    int currentState;
 
     if(motor == PAN_IND) {
         currentState = motorStates[mirror - 1].motor[PAN_IND];
@@ -161,11 +155,8 @@ void CatoptricRow::reorientMirrorAxis(Message command) {
  * of the motors/connection,, depending on value of 'test' parameter.
  */
 void CatoptricRow::reset(bool test) {
-    // Column numbers seem to not be 0-indexed on the Arduino?
-    //
-   // printf("row %d CCA %d (CR reset)\n", rowNumber, 
-           // fsm.currentCommandsToArduino);
 
+    // Column numbers seem to not be 0-indexed on the Arduino?
     if(test) {
         for(int i = 0; i < numMirrors; ++i) {
             /* Orientation of mirrors isn't guaranteed after executing this, 
@@ -183,8 +174,6 @@ void CatoptricRow::reset(bool test) {
     }
 
     update();
-    //printf("row %d CCA %d (CR end-reset)\n", rowNumber, 
-            //fsm.currentCommandsToArduino);
 }
 
 /* Get the SerialFSM's currentCommandsToArduino */
@@ -257,21 +246,4 @@ vector<char> Message::toVec() {
     msgVec.push_back(countLow);
 
     return msgVec;
-}
-
-/* Convert the Message object into a string containing what will be transmitted.
- */
-string Message::toStr() {
-
-    string str;
-    try {
-        str = to_string(MSG_MAGIC_NUM) + to_string(ACK_KEY) + 
-            to_string(rowNum) + to_string(mirrorID) + to_string(whichMotor) +
-            to_string(direction) + to_string(countHigh) + to_string(countLow);
-    } catch (...) {
-        printf("to_string error: %s\n", strerror(errno));
-        return string();
-    }
-
-    return str;
 }
