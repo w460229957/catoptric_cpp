@@ -30,6 +30,8 @@
 #define SERIAL_INFO_PREFIX_MACRO "usb-Arduino__www.arduino.cc__0043_"
 #define DEVICE_PATH "/dev/serial/by-id"
 
+#define PROGRESS_BAR_LEN 68 // Number of characters long in progress bar
+
 struct SerialPort {
     std::string serialNumber;   // Serial number (how to obtain in C++?)
     int row;            // Row of Arduino according to serialPortOrder
@@ -93,6 +95,7 @@ class CatoptricSurface {
         void parseCSVLine(int csvLineInd, int& rowRead, 
                 int& mirrorColumn, int& motorNumber, int& position);
         int initSerialPortOrder(std::string portsMapFile);
+        void drawProgressBar(int total, int ackd);
 
     public:
         CatoptricSurface();
@@ -103,4 +106,3 @@ class CatoptricSurface {
         void cca(std::string loc);
 };
 
-void drawProgressBar(int total, int ackd);

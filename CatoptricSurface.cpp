@@ -39,11 +39,13 @@ void CatoptricSurface::run() {
 
         updates++;
         sleep(RUN_SLEEP_TIME);
-        printf("\r%d commands out | %d commands in queue | %d acks | %d nacks "
-                "| %d cycles\n", commandsOut, commandsQueue, ackCount, 
+        // 'commands in queue' is nonzero only when too many commands are
+        // pending and no more can be sent
+        printf("\r%2d commands out | %d commands in queue | %2d acks | "
+               "%d nacks | %d cycles\n", commandsOut, commandsQueue, ackCount, 
                 nackCount, updates);
         drawProgressBar(commandsOut + ackCount, ackCount);
-        printf("\033[F");
+        printf("\033[F"); // Moves stdout cursor up one line
     }
 
     printf("\n\n");
@@ -216,9 +218,7 @@ void CatoptricSurface::reset(bool test) {
     else printf(" -- Testing all motors\n");
 
     for(CatoptricRow& cr : rowInterfaces) {
-        //cca(string("CS pre-CR-reset"));
         cr.reset(test); // Reset whole row
-        //cca(string("CS post-CR-reset"));
     }
 
     run();
@@ -291,6 +291,7 @@ void CatoptricSurface::updateByCSV(string path) {
 
         bool foundRow = false;
         Message msg(rowRead, mirrorColumn, motorNumber, position);
+
         /* Remember that row numbers are 1-indexed in the protocol, but
            0-indexed in these data structures! */
         for(int rowInd = 0; rowInd < NUM_ROWS; ++rowInd) {
@@ -384,7 +385,7 @@ void SerialPortDict::addPort(SerialPort port) {
  *          The first row number in that interval is implicitly one greater than
  *          the end of the previous interval (first interval starts at 1).
  *          Both bounds are INCLUSIVE.
- *      Second integer is the length of that row.
+ *      Second integer is the length of each row.
  */
 int SurfaceDimensions::initDimensions(string filePath) {
 
@@ -437,8 +438,16 @@ void CatoptricSurface::cleanup() {
     for(CatoptricRow& cr : rowInterfaces) cr.cleanup();
 }
 
-void drawProgressBar(int total, int ackd) {
-    for(int i = 0; i < ackd; ++i) printf("|||");
-    for(int i = 0; i < total - ackd; ++i) printf("---");
+void CatoptricSurface::drawProgressBar(int total, int ackd) {
+    
+    int numCharsPerMsg = PROGRESS_BAR_LEN / total;
+    if(numCharsPerMsg <= 0) numCharsPerMsg = 1;
+
+    for(int i = 0; i < ackd; ++i) {
+        for(int j = 0; j < numCharsPerMsg; ++j) printf("|");
+    }
+    for(int i = 0; i < total - ackd; ++i) {
+        for(int j = 0; j < numCharsPerMsg; ++j) printf("-");
+    }
     printf("]");
 }

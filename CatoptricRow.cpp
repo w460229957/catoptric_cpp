@@ -23,7 +23,7 @@ void CatoptricRow::update() {
         commandQueue.pop_back();
 		sendMessageToArduino(message);
     }
-    
+
     char input;
     // Read incoming data from Arduino
     while(read(serial_fd, &input, 1) > 0) {
@@ -116,7 +116,7 @@ void CatoptricRow::stepMotor(int mirrorID, int whichMotor,
 	int deltaPosInt = (int) (deltaPos * (513.0/360.0));
 	int countLow = ((int) deltaPosInt) & 255;
 	int countHigh = (((int) deltaPosInt) >> 8) & 255;
-    
+
     // mirrorID could just as well be named columnNumber
 	Message message (rowNumber, mirrorID, whichMotor, direction, 
             countHigh, countLow);
