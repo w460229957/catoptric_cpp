@@ -92,8 +92,7 @@ int CatoptricSurface::initSerialPortOrder(string portsMapFilename) {
             try {
                 row_int = stoi(row_str);
             } catch(...) {
-                printf("Ill-formatted row number in %s\n", 
-                        ARDUINO_IDS_MAP_FILENAME);
+                printf("Ill-formatted row number");
                 return ERR_STOI;
             }
 
