@@ -1,5 +1,5 @@
-OUT_NAME 	= libcatoptric_cpp.so
-CMPL_SRCS	= CatoptricSurface.cpp CatoptricRow.cpp prep_serial.cpp SerialFSM.cpp CatoptricController.cpp JNI_JNI.cpp
+OUT_NAME 	= libtesting.so
+CMPL_SRCS	= testing_JNI.cpp
 CMPL_FLAGS	= -I/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers
 
 makecat: $(CMPL_SRCS)
