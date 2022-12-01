@@ -15,6 +15,30 @@ extern "C" {
 JNIEXPORT void JNICALL Java_JNI_JNI_test
   (JNIEnv *, jobject);
 
+/*
+ * Class:     JNI_JNI
+ * Method:    quit
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_JNI_JNI_quit
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     JNI_JNI
+ * Method:    reset
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_JNI_JNI_reset
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     JNI_JNI
+ * Method:    move
+ * Signature: (IIIII)V
+ */
+JNIEXPORT void JNICALL Java_JNI_JNI_move
+  (JNIEnv *, jobject, jint, jint, jint, jint, jint);
+
 #ifdef __cplusplus
 }
 #endif
