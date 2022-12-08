@@ -20,6 +20,8 @@ JNIEXPORT void JNICALL Java_JNI_JNI_reset(JNIEnv *env, jobject thisObj) {
 }
 
 JNIEXPORT void JNICALL Java_JNI_JNI_move(JNIEnv *, jobject thisObj, jint motor, jint position, jint row, jint col, jint surface) {
+    // create a catoptric surface object, and index into each row
+    // call the stepMotor function
     char str[100];
     sprintf(str, "motor: %d \n position: %d \n row: %d \n col: %d \n, surface: %d", motor, position, row, col, surface);
     cout << str << endl;
