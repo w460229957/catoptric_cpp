@@ -34,7 +34,6 @@ class CatoptricController {
         std::string extractName(std::string userInput);
         void findCSV(int& csvInd, std::string& csvName, std::string targetName);
         void archiveCSV(std::string csvPath, std::string csvName);
-
     public:
         CatoptricController();
         void run();

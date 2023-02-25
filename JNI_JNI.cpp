@@ -2,28 +2,32 @@
 #include <iostream>    // C++ standard IO header
 #include <stdio.h>
 #include "JNI_JNI.h"  // Generated
+#include "./JNI-Interface/service/JNI_service.hpp" //Servce Interface definition
+#include "./JNI-Interface/service/JNI_service_impTest.hpp" //Implementation of the servce interface
+
 using namespace std;
 
+
+JNI_service * service = new JNI_service_impTest();
+
 JNIEXPORT void JNICALL Java_JNI_JNI_test(JNIEnv *env, jobject thisObj) {
-    cout << "Test!" << endl;
+    service->test();
     return;
 }
 
 JNIEXPORT void JNICALL Java_JNI_JNI_quit(JNIEnv *env, jobject thisObj) {
-    cout << "Quit!" << endl;
+    service->quit();
     return;
 }
 
 JNIEXPORT void JNICALL Java_JNI_JNI_reset(JNIEnv *env, jobject thisObj) {
-    cout << "Reset!" << endl;
+    service->reset();
     return;
 }
 
-JNIEXPORT void JNICALL Java_JNI_JNI_move(JNIEnv *, jobject thisObj, jint motor, jint position, jint row, jint col, jint surface) {
+JNIEXPORT void JNICALL Java_JNI_JNI_move(JNIEnv *, jobject thisObj, jint col, jint row,jint motor,jint direction,jint step) {
     // create a catoptric surface object, and index into each row
     // call the stepMotor function
-    char str[100];
-    sprintf(str, "motor: %d \n position: %d \n row: %d \n col: %d \n, surface: %d", motor, position, row, col, surface);
-    cout << str << endl;
+    service->move({col,row,motor,direction,step});
     return;
 }

@@ -35,7 +35,7 @@ struct Message {
 
     int rowNum, mirrorID, whichMotor, direction, newPos;
     int countHigh, countLow;
-
+    Message() = default;
     Message(int row_in, int mirror_in, int motor_in, int dir_in, 
             int chigh_in, int clow_in);
     Message(int mirrorRow, int mirrorColumn, int motorNumber, int position);

@@ -99,10 +99,10 @@ class CatoptricSurface {
 
     public:
         CatoptricSurface();
-
         void reset(bool test);
         void updateByCSV(std::string path);
         void cleanup();
         void cca(std::string loc);
+        void sendCommandToROW(int,int,int,int,int);
 };
 

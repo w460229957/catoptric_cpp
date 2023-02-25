@@ -13,8 +13,9 @@
 
 using namespace std;
 
+CatoptricController catCon;
+
 int main() {
-    CatoptricController catCon;
     catCon.run();
     return RET_SUCCESS;
 }

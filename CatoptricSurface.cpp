@@ -450,3 +450,20 @@ void CatoptricSurface::drawProgressBar(int total, int ackd) {
     }
     printf("]");
 }
+
+
+void CatoptricSurface::sendCommandToROW(int col, int row, int motor, int direction,int pos) {
+
+     for(auto & eachArduino:rowInterfaces){
+        if(eachArduino.getRowNumber() == col){
+            Message newMessage;
+            newMessage.mirrorID = col;
+            newMessage.whichMotor = motor;
+            newMessage.newPos = pos;
+            eachArduino.reorientMirrorAxis(newMessage);
+            return;
+        }
+     }
+
+     printf("Fail to find the arduino node on the row %d\n",row);
+}
