@@ -4,14 +4,16 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/lib/jvm/java-1.11.0-openjdk-amd64/include",
-                "/usr/lib/jvm/java-1.11.0-openjdk-amd64/include/linux"
+                "/usr/lib/jvm/default-java/include/",
+                "/usr/lib/jvm/default-java/include/linux",
+                "/home/pi/Desktop/catoptric/catoptric_cpp/JNI-Interface/googletest/googletest/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "linux-gcc-x64"
+            "intelliSenseMode": "${default}",
+            "configurationProvider": "ms-vscode.makefile-tools"
         }
     ],
     "version": 4

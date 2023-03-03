@@ -1,14 +1,12 @@
 #include "JNI_service_impTest.hpp"
-#include "JNI_MoveCommand.hpp"
-#include "JNI_TestCommand.hpp"
-#include "JNI_ResetCommand.hpp"
-#include "JNI_QuitCommand.hpp"
+#include "../commands/JNI_MoveCommand.hpp"
+#include "../commands/JNI_TestCommand.hpp"
+#include "../commands/JNI_ResetCommand.hpp"
+#include "../commands/JNI_QuitCommand.hpp"
+#include "../../CatoptricController.hpp"
 #include <initializer_list>
-#include "../CatoptricSurface.hpp"
-
 
 JNI_service_impTest::JNI_service_impTest():controller{new CatoptricController()}{
-
     availCommands[JNI_Command::Type::MOVE] = std::make_unique<JNI_MoveCommand>(controller,JNI_Command::Type::MOVE);
     availCommands[JNI_Command::Type::TEST] = std::make_unique<JNI_TestCommand>(controller,JNI_Command::Type::TEST);
     availCommands[JNI_Command::Type::RESET] = std::make_unique<JNI_ResetCommand>(controller,JNI_Command::Type::RESET);

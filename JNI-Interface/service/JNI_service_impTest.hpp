@@ -1,19 +1,17 @@
 #pragma once
 #include "JNI_service.hpp"
-#include "JNI_Command.hpp"
+#include "../commands/JNI_Command.hpp"
 #include "CatoptricController.hpp"
 #include <unordered_map>
 #include <memory>
-#include "../JNI-Interface/commands/JNI_MoveCommand.hpp"
 /**
  * @brief This is a test implementation of @interface JNI_service.
- * @details This test implementation is constructed in a sigleton pattern.
  * @author Zhengyuan Zhang
 */
 
 class JNI_service_impTest : public JNI_service{
 private:
-    CatoptricController * controller;
+    std::shared_ptr<CatoptricController> controller;//No need to have smart pointer here, since the controller's lifetime is the same as the process. 
     std::unordered_map<JNI_Command::Type, std::unique_ptr<JNI_Command>> availCommands;
 public:
     JNI_service_impTest();
