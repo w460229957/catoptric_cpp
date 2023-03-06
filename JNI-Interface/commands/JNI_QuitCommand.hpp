@@ -3,6 +3,6 @@
 
 class JNI_QuitCommand final:public JNI_Command{
 public:
-    JNI_QuitCommand(std::shared_ptr<CatoptricController> surfaceIn,Type typeIn):JNI_Command(surfaceIn,typeIn){};
+    JNI_QuitCommand(std::shared_ptr<CatoptricController> ControllerIn);
     void execute(std::vector<int>);
 };

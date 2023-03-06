@@ -1,7 +1,7 @@
 #include "JNI_ResetCommand.hpp"
 #include <iostream>
 
-JNI_ResetCommand::JNI_ResetCommand(std::shared_ptr<CatoptricController> ControllerIn,Type typeIn):JNI_Command(ControllerIn,typeIn){
+JNI_ResetCommand::JNI_ResetCommand(std::shared_ptr<CatoptricController> ControllerIn):JNI_Command(ControllerIn,JNI_Command::Type::RESET){
     std::cout <<"JNI_ResetCommand Called"<<std::endl;
 };
 

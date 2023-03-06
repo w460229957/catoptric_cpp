@@ -3,6 +3,6 @@
 
 class JNI_TestCommand final:public JNI_Command{
 public:
-    JNI_TestCommand(std::shared_ptr<CatoptricController> surfaceIn,Type typeIn):JNI_Command(surfaceIn,typeIn){};
+    JNI_TestCommand(std::shared_ptr<CatoptricController> ControllerIn);
     void execute(std::vector<int>);
 };

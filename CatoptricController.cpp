@@ -13,14 +13,10 @@
 
 using namespace std;
 
-CatoptricController catCon;
 
-int main() {
-    catCon.run();
-    return RET_SUCCESS;
+CatoptricController::CatoptricController() {
+    std::cout << "CatoptricController initialized" << std::endl;
 }
-
-CatoptricController::CatoptricController() {}
 
 /* Repeatedly check for new CSV files and prompt user for input:
  * either reset the mirrors or execute a new CSV file.

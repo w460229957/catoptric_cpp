@@ -1,5 +1,5 @@
 #include "../../CatoptricController.hpp"
-#include <jni.h>
+//#include <jni.h>
 #include <memory>
 
 class JNI_Command{
@@ -8,6 +8,6 @@ protected:
 public:
     enum class Type{MOVE,RESET,TEST,QUIT};
     Type Command_type;
-    JNI_Command(std::shared_ptr<CatoptricController> surfaceIn,Type typeIn):controller(surfaceIn),Command_type(typeIn){};
+    JNI_Command(std::shared_ptr<CatoptricController> ControllerIn,Type typeIn):controller(ControllerIn),Command_type(typeIn){};
     virtual void execute(std::vector<int>) = 0;
 };
