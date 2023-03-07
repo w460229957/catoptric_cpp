@@ -35,11 +35,9 @@ struct Message {
 
     int rowNum, mirrorID, whichMotor, direction, newPos;
     int countHigh, countLow;
-    Message() = default;
     Message(int row_in, int mirror_in, int motor_in, int dir_in, 
             int chigh_in, int clow_in);
     Message(int mirrorRow, int mirrorColumn, int motorNumber, int position);
-
     std::vector<char> toVec(); 
 };
 
@@ -55,13 +53,12 @@ class CatoptricRow {
         std::vector<MotorState> motorStates;
 
         int setupSerial(const char *serial_port_in);
-        void stepMotor(int mirrorID, int whichMotor, int direction, 
-                float delta_pos); 
         void sendMessageToArduino(Message message);
 
 
     public:
-
+        void stepMotor(int mirrorID, int whichMotor, int direction, 
+                float delta_pos); 
         // Queue of pending Message objects to be transmitted to Arduino
         std::vector<Message> commandQueue;
         // FSM controlling this Arduino
@@ -78,6 +75,6 @@ class CatoptricRow {
         int fsmCommandsOut(); 
         int fsmNackCount();
         int fsmAckCount();
-	    void reorientMirrorAxis(Message command); 
+	    void reorientMirrorAxis(const Message & command); 
         void cleanup();
 };

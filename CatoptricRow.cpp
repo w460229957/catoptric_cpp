@@ -127,7 +127,7 @@ void CatoptricRow::stepMotor(int mirrorID, int whichMotor,
  * TODO : There may be functional redundancy between stepMotor() and 
  *        reorientMirrorAxis()?
  */
-void CatoptricRow::reorientMirrorAxis(Message command) {
+void CatoptricRow::reorientMirrorAxis(const Message & command) {
 
     int mirror = command.mirrorID;
     int motor = command.whichMotor;

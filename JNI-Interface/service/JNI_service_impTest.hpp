@@ -1,7 +1,7 @@
 #pragma once
 #include "JNI_service.hpp"
 #include "../commands/JNI_Command.hpp"
-#include "CatoptricController.hpp"
+#include "../../CatoptricController.hpp"
 #include <unordered_map>
 #include <memory>
 /**
@@ -17,7 +17,7 @@ public:
     JNI_service_impTest();
     JNI_service_impTest& operator=(const JNI_service_impTest&) = delete;
     JNI_service_impTest(const JNI_service_impTest&) = delete;    
-    void move(std::vector<int> input_list);
+    void move(const std::initializer_list<int> & input_list);
     void reset();
     void test();
     void quit();

@@ -71,7 +71,7 @@ CatoptricSurface::CatoptricSurface() {
     sleep(SETUP_SLEEP_TIME);
 
     setbuf(stdout, NULL);
-    reset(false);
+    run();
 }
 
 /* Reads a config file to populate the map of Arduino USB ids to row numbers.
@@ -437,6 +437,25 @@ void CatoptricSurface::cleanup() {
     for(CatoptricRow& cr : rowInterfaces) cr.cleanup();
 }
 
+/***
+ * @date  2023-03-04
+ * @author ZhengYuan Zhang
+ * @brief  Reorients the mirror axis of the specified row to the specified
+ *        position. 
+ * @param  msg  Message object containing the row number and position to
+ *       reorient the mirror axis to.
+ * @return  void
+*/
+void CatoptricSurface::moveMirror(const int &rowNum, const int &mirrorID, const int &whichMotor, const int & directionOfTheMotor,const int &steps){
+    try{
+        rowInterfaces[rowNum-1].stepMotor(mirrorID, whichMotor, directionOfTheMotor, steps);
+    }
+    catch(...){
+        printf("Error in moving mirror");
+        throw runtime_error("Error in moving mirror");
+    }
+}
+
 void CatoptricSurface::drawProgressBar(int total, int ackd) {
     
     int numCharsPerMsg = PROGRESS_BAR_LEN / total;
@@ -449,21 +468,4 @@ void CatoptricSurface::drawProgressBar(int total, int ackd) {
         for(int j = 0; j < numCharsPerMsg; ++j) printf("-");
     }
     printf("]");
-}
-
-
-void CatoptricSurface::sendCommandToROW(int col, int row, int motor, int direction,int pos) {
-
-     for(auto & eachArduino:rowInterfaces){
-        if(eachArduino.getRowNumber() == col){
-            Message newMessage;
-            newMessage.mirrorID = col;
-            newMessage.whichMotor = motor;
-            newMessage.newPos = pos;
-            eachArduino.reorientMirrorAxis(newMessage);
-            return;
-        }
-     }
-
-     printf("Fail to find the arduino node on the row %d\n",row);
 }

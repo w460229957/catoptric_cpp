@@ -1,13 +1,13 @@
-#include "../../CatoptricController.hpp"
-//#include <jni.h>
+#pragma once
+#include "../../CatoptricSurface.hpp"
 #include <memory>
 
 class JNI_Command{
 protected:
-    std::shared_ptr<CatoptricController> controller;//One raspberry pi can only control one surface.
+    std::shared_ptr<CatoptricSurface> surface;//One raspberry pi can only control one surface.
 public:
     enum class Type{MOVE,RESET,TEST,QUIT};
-    Type Command_type;
-    JNI_Command(std::shared_ptr<CatoptricController> ControllerIn,Type typeIn):controller(ControllerIn),Command_type(typeIn){};
-    virtual void execute(std::vector<int>) = 0;
+    Type commandType;
+    JNI_Command(std::shared_ptr<CatoptricSurface> surface,Type commandType):surface(surface),commandType(commandType){};
+    virtual void execute(const std::initializer_list<int> &) = 0;
 };

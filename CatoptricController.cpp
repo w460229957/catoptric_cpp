@@ -13,8 +13,13 @@
 
 using namespace std;
 
+void CatoptricController::moveMirror(const int &rowNum, const int &mirrorID, const int &whichMotor, const int &directionOfTheMotor, const int &steps)
+{
+    surface.moveMirror(rowNum,mirrorID,whichMotor,directionOfTheMotor,steps);
+}
 
-CatoptricController::CatoptricController() {
+CatoptricController::CatoptricController()
+{
     std::cout << "CatoptricController initialized" << std::endl;
 }
 

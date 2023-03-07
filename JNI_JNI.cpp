@@ -25,9 +25,9 @@ JNIEXPORT void JNICALL Java_JNI_JNI_reset(JNIEnv *env, jobject thisObj) {
     return;
 }
 
-JNIEXPORT void JNICALL Java_JNI_JNI_move(JNIEnv *, jobject thisObj, jint col, jint row,jint motor,jint direction,jint step) {
+JNIEXPORT void JNICALL Java_JNI_JNI_move(JNIEnv *, jobject thisObj, jint row, jint col,jint motor,jint direction,jint step) {
     // create a catoptric surface object, and index into each row
     // call the stepMotor function
-    service->move({col,row,motor,direction,step});
+    service->move({row,col,motor,direction,step});
     return;
 }

@@ -35,6 +35,7 @@ class CatoptricController {
         void findCSV(int& csvInd, std::string& csvName, std::string targetName);
         void archiveCSV(std::string csvPath, std::string csvName);
     public:
+        void moveMirror(const int &rowNum, const int &mirrorID, const int &whichMotor, const int & directionOfTheMotor,const int &steps);
         CatoptricController();
         void run();
 };

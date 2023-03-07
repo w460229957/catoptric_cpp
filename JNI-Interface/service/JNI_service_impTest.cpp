@@ -3,18 +3,19 @@
 #include "../commands/JNI_TestCommand.hpp"
 #include "../commands/JNI_ResetCommand.hpp"
 #include "../commands/JNI_QuitCommand.hpp"
-#include "../../CatoptricController.hpp"
+#include "../../CatoptricSurface.hpp"
 #include <initializer_list>
+#include <memory>
 
-JNI_service_impTest::JNI_service_impTest():controller{new CatoptricController()}{
-    availCommands[JNI_Command::Type::MOVE] = std::make_unique<JNI_MoveCommand>(controller,JNI_Command::Type::MOVE);
-    availCommands[JNI_Command::Type::TEST] = std::make_unique<JNI_TestCommand>(controller,JNI_Command::Type::TEST);
-    availCommands[JNI_Command::Type::RESET] = std::make_unique<JNI_ResetCommand>(controller,JNI_Command::Type::RESET);
-    availCommands[JNI_Command::Type::QUIT] = std::make_unique<JNI_QuitCommand>(controller,JNI_Command::Type::QUIT);
-}
+JNI_service_impTest::JNI_service_impTest():controller{new CatoptricSurface()}{
+    availCommands[JNI_Command::Type::MOVE].reset(new JNI_MoveCommand(controller));
+    availCommands[JNI_Command::Type::RESET].reset(new JNI_ResetCommand(controller));
+    availCommands[JNI_Command::Type::TEST].reset(new JNI_TestCommand(controller));
+    availCommands[JNI_Command::Type::QUIT].reset(new JNI_QuitCommand(controller));
+    return;
+};
 
-
-void JNI_service_impTest::move(std::vector<int> input_list){
+void JNI_service_impTest::move(const std::initializer_list<int> & input_list){
     availCommands[JNI_Command::Type::MOVE]->execute(input_list);
     return;
 }

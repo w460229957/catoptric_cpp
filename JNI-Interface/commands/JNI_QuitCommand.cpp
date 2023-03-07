@@ -9,13 +9,14 @@
  * @return None.
 */
 
-JNI_QuitCommand::JNI_QuitCommand(std::shared_ptr<CatoptricController> ControllerIn):JNI_Command(ControllerIn,JNI_Command::Type::QUIT){
+JNI_QuitCommand::JNI_QuitCommand(std::shared_ptr<CatoptricSurface> surface):JNI_Command(surface,JNI_Command::Type::QUIT){
     std::cout <<"JNI_QuitCommand::JNI_QuitCommand()"<<std::endl;
     return;
 }
 
-void JNI_QuitCommand::execute(std::vector<int> input_list){
+void JNI_QuitCommand::execute(const std::initializer_list<int> & input_list){
     std::cout <<"JNI_QuitCommand::execute()"<<std::endl;
+    surface->cleanup();
     return;
 }
 
