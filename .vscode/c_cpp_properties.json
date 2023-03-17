@@ -5,8 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/usr/lib/jvm/default-java/include/",
-                "/usr/lib/jvm/default-java/include/linux",
-                "/home/pi/Desktop/catoptric/catoptric_cpp/JNI-Interface/googletest/googletest/include/**"
+                "/usr/lib/jvm/default-java/include/linux"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
