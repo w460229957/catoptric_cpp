@@ -13,8 +13,14 @@
 
 using namespace std;
 
-void CatoptricController::moveMirror(const int &rowNum, const int &mirrorID, const int &whichMotor, const int &directionOfTheMotor, const int &steps)
+void CatoptricController::moveMirror(const int rowNum, const int mirrorID, const int whichMotor, const int directionOfTheMotor, const int steps)
 {
+    cout << "moving mirror- " 
+    <<"rowNum " << rowNum << " " 
+    << "mirror(col) " << mirrorID << " " 
+    << "whichMotor " << whichMotor << " " 
+    << "directionOfTheMother " << directionOfTheMotor << " " 
+    << "steps " << steps << endl;
     surface.moveMirror(rowNum,mirrorID,whichMotor,directionOfTheMotor,steps);
 }
 
@@ -79,9 +85,24 @@ void CatoptricController::run() {
             // Update mirrors' orientations based on CSV contents
             surface.updateByCSV(csvPath); 
             printf(" -- \'%s\' ran successfully\n", csvName.c_str());
-
+            
             // Renames & archives the csv
             archiveCSV(csvPath, csvName);
+        } else if(userInput == "move"){
+            int rowNum, mirrorID, whichMotor, directionOfTheMotor, steps;
+            std::cout << "Enter row number: ";
+            std::cin >> rowNum;
+            std::cout << "Enter mirror ID: ";
+            std::cin >> mirrorID;
+            std::cout << "Enter which motor: ";
+            std::cin >> whichMotor;
+            std::cout << "Enter direction of the motor: ";
+            std::cin >> directionOfTheMotor;
+            std::cout << "Enter steps: ";
+            std::cin >> steps;
+            moveMirror(rowNum, mirrorID, whichMotor, directionOfTheMotor, steps);
+        } else {
+            printf(" -- Invalid input\n");
         }
     }
 }

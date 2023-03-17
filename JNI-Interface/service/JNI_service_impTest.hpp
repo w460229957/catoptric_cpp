@@ -2,6 +2,7 @@
 #include "JNI_service.hpp"
 #include "../commands/JNI_Command.hpp"
 #include "../../CatoptricController.hpp"
+#include "../../CatoptricSurface.hpp"
 #include <unordered_map>
 #include <memory>
 /**
@@ -11,7 +12,7 @@
 
 class JNI_service_impTest : public JNI_service{
 private:
-    std::shared_ptr<CatoptricController> controller;//No need to have smart pointer here, since the controller's lifetime is the same as the process. 
+    std::shared_ptr<CatoptricSurface> surface;
     std::unordered_map<JNI_Command::Type, std::unique_ptr<JNI_Command>> availCommands;
 public:
     JNI_service_impTest();

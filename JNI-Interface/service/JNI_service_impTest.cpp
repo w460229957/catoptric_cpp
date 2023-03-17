@@ -7,11 +7,11 @@
 #include <initializer_list>
 #include <memory>
 
-JNI_service_impTest::JNI_service_impTest():controller{new CatoptricSurface()}{
-    availCommands[JNI_Command::Type::MOVE].reset(new JNI_MoveCommand(controller));
-    availCommands[JNI_Command::Type::RESET].reset(new JNI_ResetCommand(controller));
-    availCommands[JNI_Command::Type::TEST].reset(new JNI_TestCommand(controller));
-    availCommands[JNI_Command::Type::QUIT].reset(new JNI_QuitCommand(controller));
+JNI_service_impTest::JNI_service_impTest():surface{new CatoptricSurface()}{
+    availCommands[JNI_Command::Type::MOVE].reset(new JNI_MoveCommand(surface));
+    availCommands[JNI_Command::Type::RESET].reset(new JNI_ResetCommand(surface));
+    availCommands[JNI_Command::Type::TEST].reset(new JNI_TestCommand(surface));
+    availCommands[JNI_Command::Type::QUIT].reset(new JNI_QuitCommand(surface));
     return;
 };
 

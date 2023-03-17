@@ -102,6 +102,6 @@ class CatoptricSurface {
         void reset(bool test);
         void updateByCSV(std::string path);
         void cleanup();
-        void moveMirror(const int &rowNum, const int &mirrorID, const int &whichMotor, const int & directionOfTheMotor,const int &steps);
+        void moveMirror(const int, const int, const int, const int,const int);
 };
 

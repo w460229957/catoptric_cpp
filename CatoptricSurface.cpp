@@ -446,7 +446,7 @@ void CatoptricSurface::cleanup() {
  *       reorient the mirror axis to.
  * @return  void
 */
-void CatoptricSurface::moveMirror(const int &rowNum, const int &mirrorID, const int &whichMotor, const int & directionOfTheMotor,const int &steps){
+void CatoptricSurface::moveMirror(const int rowNum, const int mirrorID, const int whichMotor, const int directionOfTheMotor,const int steps){
     try{
         rowInterfaces[rowNum-1].stepMotor(mirrorID, whichMotor, directionOfTheMotor, steps);
     }

@@ -8,7 +8,7 @@
 using namespace std;
 
 
-JNI_service * service = new JNI_service_impTest();
+JNI_service_impTest * service = new JNI_service_impTest();
 
 JNIEXPORT void JNICALL Java_JNI_JNI_test(JNIEnv *env, jobject thisObj) {
     service->test();
