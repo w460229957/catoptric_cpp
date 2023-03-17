@@ -457,7 +457,7 @@ void CatoptricSurface::moveMirror(const int rowNum, const int mirrorID, const in
 }
 
 void CatoptricSurface::drawProgressBar(int total, int ackd) {
-    
+    if(total <= 0) return;
     int numCharsPerMsg = PROGRESS_BAR_LEN / total;
     if(numCharsPerMsg <= 0) numCharsPerMsg = 1;
 

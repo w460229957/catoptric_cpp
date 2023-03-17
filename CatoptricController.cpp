@@ -45,7 +45,7 @@ void CatoptricController::run() {
                           " new file to run: ";
 
         if(newCSVs.size() > 0) {
-            inputMsg = "\'Reset\' mirrors, 'Test' motors, or \'Run\' file: ";
+            inputMsg = "\'Reset\' mirrors, 'Test' motors, or \'Run\' file: \'Move\' to move a single mirror\n";
         }
 
         string userInput = getUserInput(inputMsg); // Converts to lowercase
