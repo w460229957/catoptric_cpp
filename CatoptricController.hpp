@@ -10,7 +10,7 @@
 #include <cstring>
 #include "CatoptricSurface.hpp"
 #include "ErrCodes.hpp"
-
+#include <memory>
 #define STR_EQUAL 0
 #define DIR_LEN_INIT -10
 
@@ -23,7 +23,7 @@
 class CatoptricController {
 
     private:
-        CatoptricSurface surface;
+        std::shared_ptr<CatoptricSurface> surface;
         std::vector<std::string> newCSVs;
 
         void checkForNewCSV();
@@ -34,6 +34,7 @@ class CatoptricController {
         std::string extractName(std::string userInput);
         void findCSV(int& csvInd, std::string& csvName, std::string targetName);
         void archiveCSV(std::string csvPath, std::string csvName);
+        void receiveUserInput();
     public:
         void moveMirror(const int, const int, const int, const int,const int);
         CatoptricController();

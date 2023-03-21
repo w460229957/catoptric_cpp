@@ -2,7 +2,7 @@
 
 #include <vector>
 #include "SerialFSM.hpp"
-
+#include <mutex>
 #define MAX_CMDS_OUT  32
 #define FLUSH_IN_OUT  2
 #define NUM_MSG_ELEMS 8
@@ -40,7 +40,6 @@ struct Message {
     Message(int mirrorRow, int mirrorColumn, int motorNumber, int position);
     std::vector<char> toVec(); 
 };
-
 /* Encodes the state of a row of mirrors/motors and the corresponding Arduino */
 class CatoptricRow {
 

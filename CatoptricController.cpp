@@ -5,12 +5,16 @@
  * Author: Scott Sirri scottsirri@wustl.edu
  */
 
+#include <condition_variable>
 #include <fstream> // ifstream
 #include <iostream> // cin
 #include <sstream> // stringstream
 #include <algorithm> // transform
 #include "CatoptricController.hpp"
-
+#include <thread>
+#include <chrono>
+#include <mutex>
+#include <condition_variable>
 using namespace std;
 
 void CatoptricController::moveMirror(const int rowNum, const int mirrorID, const int whichMotor, const int directionOfTheMotor, const int steps)
@@ -21,26 +25,32 @@ void CatoptricController::moveMirror(const int rowNum, const int mirrorID, const
     << "whichMotor " << whichMotor << " " 
     << "directionOfTheMother " << directionOfTheMotor << " " 
     << "steps " << steps << endl;
-    surface.moveMirror(rowNum,mirrorID,whichMotor,directionOfTheMotor,steps);
+    surface->moveMirror(rowNum,mirrorID,whichMotor,directionOfTheMotor,steps);
 }
 
-CatoptricController::CatoptricController()
+CatoptricController::CatoptricController(): surface{new CatoptricSurface()}
 {
+    //Initialize one thread for each surface
+    
+
     std::cout << "CatoptricController initialized" << std::endl;
 }
 
 /* Repeatedly check for new CSV files and prompt user for input:
  * either reset the mirrors or execute a new CSV file.
  */
+
+extern std::condition_variable cv;
+
 void CatoptricController::run() {
+    //wake up the CatoptricSurface thread
+    cv.notify_one();
 
     while(CONTROLLER_RUNNING) { // Infinite event loop
 
         // Retrieve any new CSV files
         checkForNewCSV();
-
         printf("\n-------------------------\n\n");
-
         string inputMsg = "\'Reset\' mirrors, 'Test' motors, or 'Check' for a"
                           " new file to run: ";
 
@@ -51,15 +61,15 @@ void CatoptricController::run() {
         string userInput = getUserInput(inputMsg); // Converts to lowercase
 
         if(userInput.compare("quit") == STR_EQUAL) {
-            surface.cleanup(); // Free resources
+            surface->cleanup(); // Free resources
             return;
         } else if(userInput.compare("check") == STR_EQUAL) {
             checkForNewCSV();
         } else if(userInput.compare("reset") == STR_EQUAL) {
-            surface.reset(REGULAR_RESET);
+            surface->reset(REGULAR_RESET);
             printf(" -- Reset Complete\n");
         } else if(userInput.compare("test") == STR_EQUAL) {
-            surface.reset(TEST_RESET);
+            surface->reset(TEST_RESET);
             printf("\tBEWARE: Orientation of mirrors is no longer "
                     "guaranteed!\n");
             printf(" -- Test Complete\n");
@@ -83,30 +93,34 @@ void CatoptricController::run() {
             string csvPath = NEW_CSV_DIR "/" + csvName;
 
             // Update mirrors' orientations based on CSV contents
-            surface.updateByCSV(csvPath); 
+            surface->updateByCSV(csvPath); 
             printf(" -- \'%s\' ran successfully\n", csvName.c_str());
             
             // Renames & archives the csv
             archiveCSV(csvPath, csvName);
         } else if(userInput == "move"){
-            int rowNum, mirrorID, whichMotor, directionOfTheMotor, steps;
-            std::cout << "Enter row number: ";
-            std::cin >> rowNum;
-            std::cout << "Enter mirror ID: ";
-            std::cin >> mirrorID;
-            std::cout << "Enter which motor: ";
-            std::cin >> whichMotor;
-            std::cout << "Enter direction of the motor: ";
-            std::cin >> directionOfTheMotor;
-            std::cout << "Enter steps: ";
-            std::cin >> steps;
-            moveMirror(rowNum, mirrorID, whichMotor, directionOfTheMotor, steps);
         } else {
             printf(" -- Invalid input\n");
         }
     }
 }
 
+
+void CatoptricController::receiveUserInput()
+{
+    int rowNum, mirrorID, whichMotor, directionOfTheMotor, steps;
+    std::cout << "Enter row number: ";
+    std::cin >> rowNum;
+    std::cout << "Enter mirror ID: ";
+    std::cin >> mirrorID;
+    std::cout << "Enter which motor: ";
+    std::cin >> whichMotor;
+    std::cout << "Enter direction of the motor: ";
+    std::cin >> directionOfTheMotor;
+    std::cout << "Enter steps: ";
+    std::cin >> steps;
+    moveMirror(rowNum, mirrorID, whichMotor, directionOfTheMotor, steps);
+}
 /* Renames and moves the passed file to the archive, appending a prefix to the
  * filename based on how many files are already archived.
  */

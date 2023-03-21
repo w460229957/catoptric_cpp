@@ -12,6 +12,6 @@ makecat: $(CMPL_SRCS)
 clean:
 	
 standalone:
-	g++ -Wall -g --std=c++11 CatoptricSurface.cpp CatoptricRow.cpp prep_serial.cpp SerialFSM.cpp CatoptricController.cpp CatoptricArrayMain.cpp -o catoptric_cpp
+	g++ -Wall -g --std=c++11 CatoptricSurface.cpp CatoptricRow.cpp prep_serial.cpp SerialFSM.cpp CatoptricController.cpp CatoptricArrayMain.cpp Debug.cpp -lpthread -o catoptric_cpp
 
 # g++ -Wall --std=c++11 CatoptricController.cpp CatoptricSurface.cpp CatoptricRow.cpp prep_serial.cpp SerialFSM.cpp CatoptricJNI.cpp -shared -o $(out_name) -I/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers

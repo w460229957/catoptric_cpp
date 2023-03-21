@@ -4,28 +4,32 @@
 #include <cstdio>      // snprintf
 #include <sstream>
 #include <fstream>
+#include <sys/types.h>
 #include <unistd.h>
 #include <errno.h> 
-    
+#include <thread>
 #include "CatoptricSurface.hpp"
 #include "ErrCodes.hpp"
-
+#include <iostream>
+#include <condition_variable>
 using namespace std;
 
 /* Each row reads incoming data and updates its SerialFSM object, sends queued
  * message to its Arduino.
  * Sleep and print update message.
  */
-void CatoptricSurface::run() {
+std::condition_variable cv;
+std::mutex cv_m;
 
+
+void CatoptricSurface::update(){
+    std::cout << "Updating surface...:[" << std::this_thread::get_id()<<std::endl;
     printf("\n\n");
-    int commandsOut = 1, updates = 0;
+    int commandsOut = 0, updates = 0;
 
-    while(commandsOut > 0) {
-
-        commandsOut = 0;
-        /* Each row reads incoming data and updates SerialFSM objects, 
-           sends messages from the back of respective commandQueue */
+    /* Each row reads incoming data and updates SerialFSM objects, 
+        sends messages from the back of respective commandQueue */
+    do{
         for(CatoptricRow& cr : rowInterfaces) cr.update();
 
         int commandsQueue = 0, ackCount = 0, nackCount = 0;
@@ -42,13 +46,14 @@ void CatoptricSurface::run() {
         // 'commands in queue' is nonzero only when too many commands are
         // pending and no more can be sent
         printf("\r%2d commands out | %d commands in queue | %2d acks | "
-               "%d nacks | %d cycles\n", commandsOut, commandsQueue, ackCount, 
+                "%d nacks | %d cycles\n", commandsOut, commandsQueue, ackCount, 
                 nackCount, updates);
         drawProgressBar(commandsOut + ackCount, ackCount);
         printf("\033[F"); // Moves stdout cursor up one line
-    }
 
-    printf("\n\n");
+        printf("\n\n");
+    }while(commandsOut > 0);
+
 
     for(CatoptricRow& cr : rowInterfaces) {
         cr.fsm.ackCount = 0;
@@ -56,7 +61,7 @@ void CatoptricSurface::run() {
     }
 }
 
-CatoptricSurface::CatoptricSurface() {
+CatoptricSurface::CatoptricSurface(): running(true) {
 
     SERIAL_INFO_PREFIX = SERIAL_INFO_PREFIX_MACRO;
 
@@ -71,7 +76,42 @@ CatoptricSurface::CatoptricSurface() {
     sleep(SETUP_SLEEP_TIME);
 
     setbuf(stdout, NULL);
-    run();
+    //create a thread to run the run() function
+    //The thread will run until the destructor is called
+    //Note that Thread default constructor does not create a thread
+    //The thread is created when the thread object is assigned to a thread with the = operator
+    //Or when the thread object is constructed with a parameterized constructor
+    surfaceThread = std::thread(&CatoptricSurface::run, this);
+}
+
+void CatoptricSurface::run() {
+    std::unique_lock<std::mutex> lk(cv_m);
+    while(running){
+        cv.wait(lk);
+        update();
+    }
+}
+
+//Move constructor and destructor
+CatoptricSurface::CatoptricSurface(CatoptricSurface&& other){
+    if(this == &other) return;
+    //std::move() is used to move the resources from other to this
+    //It is more efficient than copying the resources and is required for thread objects
+    //That is, thread objects cannot be copied, only moved.
+    //If there is no move assignment operator for a class with a rvalue, the compiler will use the copy assignment operator
+    //If there is no move constructor for a class with a rvalue, the compiler will use the copy constructor
+    this->rowInterfaces = std::move(other.rowInterfaces);
+    this->dimensions = std::move(other.dimensions);
+    this->serialPorts = std::move(other.serialPorts);
+    this->csvData = std::move(other.csvData);
+    this->surfaceThread = std::move(other.surfaceThread);
+}
+
+
+CatoptricSurface::~CatoptricSurface(){
+    running = false;
+    cv.notify_one();
+    surfaceThread.join();
 }
 
 /* Reads a config file to populate the map of Arduino USB ids to row numbers.
@@ -448,10 +488,9 @@ void CatoptricSurface::cleanup() {
 */
 void CatoptricSurface::moveMirror(const int rowNum, const int mirrorID, const int whichMotor, const int directionOfTheMotor,const int steps){
     try{
-        rowInterfaces[rowNum-1].stepMotor(mirrorID, whichMotor, directionOfTheMotor, steps);
+        rowInterfaces.at(rowNum - 1).stepMotor(mirrorID, whichMotor, directionOfTheMotor, steps);
     }
     catch(...){
-        printf("Error in moving mirror");
         throw runtime_error("Error in moving mirror");
     }
 }
@@ -469,3 +508,6 @@ void CatoptricSurface::drawProgressBar(int total, int ackd) {
     }
     printf("]");
 }
+
+
+

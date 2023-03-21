@@ -4,7 +4,7 @@
 
 #include "CatoptricRow.hpp"
 #include "SerialFSM.hpp"
-
+#include <thread>
 #define STR_EQ 0
 #define UNDEF_ORDER -4
 
@@ -63,6 +63,7 @@ class SurfaceDimensions {
         std::vector<int> rowLengths;
 
     public:
+        
         int initDimensions(std::string filePath);
         int getLength(unsigned rowNumber);
 };
@@ -70,6 +71,10 @@ class SurfaceDimensions {
 class CatoptricSurface {
 
     private:
+        // Thread for running the surface
+        std::thread surfaceThread;
+        //Automatic bool to determine if surface is running
+        bool running;
         // Number of rows in surface
         int numRowsConnected;
         // Hard-coded dictionary of the setup's Arduinos and each serial number
@@ -88,7 +93,6 @@ class CatoptricSurface {
         std::vector<SerialPort> getOrderedSerialPorts();
         std::vector<SerialPort> readSerialPorts(std::string baseDir);
         void setupRowInterfaces();
-        void run();
         void getCSV(std::string path);
         std::vector<std::string> getNextLineAndSplitIntoTokens(
                 std::istream& str);
@@ -96,9 +100,12 @@ class CatoptricSurface {
                 int& mirrorColumn, int& motorNumber, int& position);
         int initSerialPortOrder(std::string portsMapFile);
         void drawProgressBar(int total, int ackd);
-
+        void update();
     public:
         CatoptricSurface();
+        ~CatoptricSurface();
+        void run();
+        CatoptricSurface(CatoptricSurface&& other);
         void reset(bool test);
         void updateByCSV(std::string path);
         void cleanup();

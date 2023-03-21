@@ -1,10 +1,10 @@
-
+#include <condition_variable>
 #include <sys/ioctl.h>
 #include <cstring>
 #include <termios.h>
 #include <vector>
 #include <unistd.h>
-
+#include <mutex>
 #include "CatoptricRow.hpp"
 #include "SerialFSM.hpp"
 #include "prep_serial.hpp"
@@ -16,24 +16,35 @@ using namespace std;
  * object's SerialFSM object.
  * Send a Message object from the back of the commandQueue to the Arduino.
  */
+
+std::mutex commandQueueMutex;
 void CatoptricRow::update() {
     // Send messages to Arduino (sends messages from all rows)
-	while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
-		Message message = commandQueue.back();
-        commandQueue.pop_back();
-		sendMessageToArduino(message);
+	while(fsmCommandsOut() < MAX_CMDS_OUT) { 
+        // Lock the commandQueue
+        commandQueueMutex.lock();
+        if(commandQueue.size() > 0){
+            // Pop the last message from the queue
+            Message message = commandQueue.back();
+            commandQueue.pop_back();
+            commandQueueMutex.unlock();
+
+            sendMessageToArduino(message);
+        }
+        commandQueueMutex.unlock();
     }
 
     char input;
     // Read incoming data from Arduino
     while(read(serial_fd, &input, 1) > 0) {
-
         fsm.Execute(input);
         if(fsm.messageReady) {
             printf("Incoming message:%s\n", fsm.message);
+            fsm.messageReady = false;
             fsm.clearMsg();
         }
     }
+    
 }
 
 CatoptricRow::CatoptricRow() {}
@@ -107,9 +118,10 @@ void CatoptricRow::sendMessageToArduino(Message message) {
 
 /* Push a Message onto the commandQueue to update a mirror's position.
  */
+ extern condition_variable cv;
 void CatoptricRow::stepMotor(int mirrorID, int whichMotor, 
         int direction, float deltaPos) {
-
+    
     if(deltaPos < 0) deltaPos *= -1;
 
     // I assume there's 513 steps in the motor?
@@ -120,7 +132,14 @@ void CatoptricRow::stepMotor(int mirrorID, int whichMotor,
     // mirrorID could just as well be named columnNumber
 	Message message (rowNumber, mirrorID, whichMotor, direction, 
             countHigh, countLow);
+    
+    //Critial Section
+    //acquire commandQueueMutex here
+    commandQueueMutex.lock();
 	commandQueue.push_back(message);
+    commandQueueMutex.unlock();
+    cv.notify_one();
+    //release commandQueueMutex here
 }
 
 /* Push a Message onto the commandQueue and update motorStates. 
