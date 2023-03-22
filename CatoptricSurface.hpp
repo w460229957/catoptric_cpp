@@ -5,6 +5,7 @@
 #include "CatoptricRow.hpp"
 #include "SerialFSM.hpp"
 #include <thread>
+#include "Semaphore.hpp"
 #define STR_EQ 0
 #define UNDEF_ORDER -4
 
@@ -71,6 +72,8 @@ class SurfaceDimensions {
 class CatoptricSurface {
 
     private:
+        //Counding semaphore for the surface
+        CountingSemaphore surfaceSemaphore;
         // Thread for running the surface
         std::thread surfaceThread;
         //Automatic bool to determine if surface is running
@@ -105,7 +108,6 @@ class CatoptricSurface {
         CatoptricSurface();
         ~CatoptricSurface();
         void run();
-        CatoptricSurface(CatoptricSurface&& other);
         void reset(bool test);
         void updateByCSV(std::string path);
         void cleanup();

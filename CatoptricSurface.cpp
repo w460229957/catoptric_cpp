@@ -11,14 +11,13 @@
 #include "CatoptricSurface.hpp"
 #include "ErrCodes.hpp"
 #include <iostream>
-#include <condition_variable>
+#include "Semaphore.hpp"
 using namespace std;
 
 /* Each row reads incoming data and updates its SerialFSM object, sends queued
  * message to its Arduino.
  * Sleep and print update message.
  */
-std::condition_variable cv;
 std::mutex cv_m;
 
 
@@ -87,30 +86,15 @@ CatoptricSurface::CatoptricSurface(): running(true) {
 void CatoptricSurface::run() {
     std::unique_lock<std::mutex> lk(cv_m);
     while(running){
-        cv.wait(lk);
+        surfaceSemaphore.wait();
         update();
     }
-}
-
-//Move constructor and destructor
-CatoptricSurface::CatoptricSurface(CatoptricSurface&& other){
-    if(this == &other) return;
-    //std::move() is used to move the resources from other to this
-    //It is more efficient than copying the resources and is required for thread objects
-    //That is, thread objects cannot be copied, only moved.
-    //If there is no move assignment operator for a class with a rvalue, the compiler will use the copy assignment operator
-    //If there is no move constructor for a class with a rvalue, the compiler will use the copy constructor
-    this->rowInterfaces = std::move(other.rowInterfaces);
-    this->dimensions = std::move(other.dimensions);
-    this->serialPorts = std::move(other.serialPorts);
-    this->csvData = std::move(other.csvData);
-    this->surfaceThread = std::move(other.surfaceThread);
 }
 
 
 CatoptricSurface::~CatoptricSurface(){
     running = false;
-    cv.notify_one();
+    surfaceSemaphore.signal_all();
     surfaceThread.join();
 }
 
@@ -233,7 +217,7 @@ vector<SerialPort> CatoptricSurface::readSerialPorts(string baseDir) {
  */
 void CatoptricSurface::setupRowInterfaces() {
     for(SerialPort sp : serialPorts) {
-
+        
         string port = sp.device;
         char cstr[port.size()];
         strcpy(cstr, port.c_str());
@@ -244,7 +228,7 @@ void CatoptricSurface::setupRowInterfaces() {
 		printf(" -- Initializing Catoptric Row %d with %d mirrors\n", 
                 rowNum, rowLen);
 
-        CatoptricRow cr(rowNum, rowLen, cstr);
+        CatoptricRow cr(rowNum, rowLen, cstr,surfaceSemaphore);
 	    rowInterfaces.push_back(cr);
     }
 }

@@ -11,10 +11,6 @@
 #include <sstream> // stringstream
 #include <algorithm> // transform
 #include "CatoptricController.hpp"
-#include <thread>
-#include <chrono>
-#include <mutex>
-#include <condition_variable>
 using namespace std;
 
 void CatoptricController::moveMirror(const int rowNum, const int mirrorID, const int whichMotor, const int directionOfTheMotor, const int steps)
@@ -40,11 +36,9 @@ CatoptricController::CatoptricController(): surface{new CatoptricSurface()}
  * either reset the mirrors or execute a new CSV file.
  */
 
-extern std::condition_variable cv;
 
 void CatoptricController::run() {
     //wake up the CatoptricSurface thread
-    cv.notify_one();
 
     while(CONTROLLER_RUNNING) { // Infinite event loop
 

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 #include "SerialFSM.hpp"
 #include <mutex>
+#include "Semaphore.hpp"
 #define MAX_CMDS_OUT  32
 #define FLUSH_IN_OUT  2
 #define NUM_MSG_ELEMS 8
@@ -44,6 +46,8 @@ struct Message {
 class CatoptricRow {
 
     private:
+        //Reference to the counting semaphore for the number of commands
+        CountingSemaphore & surfaceSem;
         // File descriptor of serial port written to for its Arduino
         int serial_fd;
         int rowNumber, numMirrors;
@@ -63,9 +67,8 @@ class CatoptricRow {
         // FSM controlling this Arduino
         SerialFSM fsm;
 
-        CatoptricRow();
         CatoptricRow(int rowNumber_in, int numMirrors_in, 
-                const char *serial_port_in);
+                const char *serial_port_in,CountingSemaphore & surfaceSem_in);
 
 	    void reset(bool test);
         void update();

@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <mutex>
 #include "CatoptricRow.hpp"
+#include "Semaphore.hpp"
 #include "SerialFSM.hpp"
 #include "prep_serial.hpp"
 #include "ErrCodes.hpp"
@@ -47,14 +48,12 @@ void CatoptricRow::update() {
     
 }
 
-CatoptricRow::CatoptricRow() {}
 
 CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn, 
-        const char *serialPortIn) {
+        const char *serialPortIn, CountingSemaphore & surfaceSem):surfaceSem(surfaceSem) {
 
 	rowNumber = rowNumberIn;
 	numMirrors = numMirrorsIn;
-
 	// Initalize a MotorState object for each motor
 	for(int i = 0; i < numMirrors; ++i) {
         MotorState state = MotorState();
@@ -118,7 +117,6 @@ void CatoptricRow::sendMessageToArduino(Message message) {
 
 /* Push a Message onto the commandQueue to update a mirror's position.
  */
- extern condition_variable cv;
 void CatoptricRow::stepMotor(int mirrorID, int whichMotor, 
         int direction, float deltaPos) {
     
@@ -138,7 +136,9 @@ void CatoptricRow::stepMotor(int mirrorID, int whichMotor,
     commandQueueMutex.lock();
 	commandQueue.push_back(message);
     commandQueueMutex.unlock();
-    cv.notify_one();
+
+    //Signal that the commandQueue has been updated
+    surfaceSem.signal();
     //release commandQueueMutex here
 }
 
