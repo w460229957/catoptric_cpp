@@ -102,7 +102,7 @@ void SerialFSM::clearMsg() {
         free(message);
         message = nullptr;
     }
-
+    currentCommandsToArduino = 0;
     messageEnd = message;
     messageReady = false;
 }

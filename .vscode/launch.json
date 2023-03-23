@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/home/w460239957/catoptric_cpp/catoptric_cpp",
+            "program": "/home/pi/Desktop/catoptric/catoptric_cpp/catoptric_cpp",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

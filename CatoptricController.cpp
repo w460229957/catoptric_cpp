@@ -93,6 +93,7 @@ void CatoptricController::run() {
             // Renames & archives the csv
             archiveCSV(csvPath, csvName);
         } else if(userInput == "move"){
+            receiveUserInput();
         } else {
             printf(" -- Invalid input\n");
         }
@@ -217,6 +218,7 @@ void CatoptricController::checkForNewCSV() {
  * */
 string CatoptricController::getUserInput(string inputMessage) {
     string userInput;
+    std::cout << std::endl;
     printf("%s", inputMessage.c_str());
     getline(cin, userInput);
     printf("\n\n");

@@ -18,27 +18,28 @@ using namespace std;
  * message to its Arduino.
  * Sleep and print update message.
  */
-std::mutex cv_m;
+
 
 
 void CatoptricSurface::update(){
-    std::cout << "Updating surface...:[" << std::this_thread::get_id()<<std::endl;
+    std::cout << "Updating surface...:[" << std::this_thread::get_id()<<"]" << std::endl;
     printf("\n\n");
-    int commandsOut = 0, updates = 0;
-
     /* Each row reads incoming data and updates SerialFSM objects, 
         sends messages from the back of respective commandQueue */
-    do{
-        for(CatoptricRow& cr : rowInterfaces) cr.update();
-
+        int commandsOut = 0, updates = 0;
         int commandsQueue = 0, ackCount = 0, nackCount = 0;
-        
-        for(CatoptricRow& cr : rowInterfaces) {
+    do{
+        commandsOut = 0;
+        commandsQueue = 0;
+        ackCount = 0;
+        nackCount = 0;
+        for(CatoptricRow& cr : rowInterfaces){
+            cr.update();
             commandsOut += cr.fsmCommandsOut();
             ackCount += cr.fsmAckCount();
             nackCount += cr.fsmNackCount();
             commandsQueue += cr.commandQueue.size();
-        }
+        } 
 
         updates++;
         sleep(RUN_SLEEP_TIME);
@@ -51,8 +52,7 @@ void CatoptricSurface::update(){
         printf("\033[F"); // Moves stdout cursor up one line
 
         printf("\n\n");
-    }while(commandsOut > 0);
-
+    }while(commandsOut - (ackCount + nackCount)> 0);
 
     for(CatoptricRow& cr : rowInterfaces) {
         cr.fsm.ackCount = 0;
@@ -60,7 +60,7 @@ void CatoptricSurface::update(){
     }
 }
 
-CatoptricSurface::CatoptricSurface(): running(true) {
+CatoptricSurface::CatoptricSurface(): surfaceSemaphore(),running(true){
 
     SERIAL_INFO_PREFIX = SERIAL_INFO_PREFIX_MACRO;
 
@@ -84,7 +84,6 @@ CatoptricSurface::CatoptricSurface(): running(true) {
 }
 
 void CatoptricSurface::run() {
-    std::unique_lock<std::mutex> lk(cv_m);
     while(running){
         surfaceSemaphore.wait();
         update();
@@ -243,8 +242,6 @@ void CatoptricSurface::reset(bool test) {
     for(CatoptricRow& cr : rowInterfaces) {
         cr.reset(test); // Reset whole row
     }
-
-    run();
 }
 
 /* Clear the old cached CSV data.
@@ -466,17 +463,14 @@ void CatoptricSurface::cleanup() {
  * @author ZhengYuan Zhang
  * @brief  Reorients the mirror axis of the specified row to the specified
  *        position. 
- * @param  msg  Message object containing the row number and position to
- *       reorient the mirror axis to.
  * @return  void
 */
 void CatoptricSurface::moveMirror(const int rowNum, const int mirrorID, const int whichMotor, const int directionOfTheMotor,const int steps){
-    try{
-        rowInterfaces.at(rowNum - 1).stepMotor(mirrorID, whichMotor, directionOfTheMotor, steps);
+    if(rowNum < 1 || rowNum > NUM_ROWS) {
+        printf("Invalid row number passed to moveMirror: %d\n", rowNum);
+        return;
     }
-    catch(...){
-        throw runtime_error("Error in moving mirror");
-    }
+    rowInterfaces[rowNum - 1].stepMotor(mirrorID, whichMotor, directionOfTheMotor, steps);
 }
 
 void CatoptricSurface::drawProgressBar(int total, int ackd) {

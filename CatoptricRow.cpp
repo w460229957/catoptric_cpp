@@ -1,4 +1,5 @@
 #include <condition_variable>
+#include <cstdio>
 #include <sys/ioctl.h>
 #include <cstring>
 #include <termios.h>
@@ -6,6 +7,7 @@
 #include <unistd.h>
 #include <mutex>
 #include "CatoptricRow.hpp"
+#include "CatoptricSurface.hpp"
 #include "Semaphore.hpp"
 #include "SerialFSM.hpp"
 #include "prep_serial.hpp"
@@ -17,27 +19,35 @@ using namespace std;
  * object's SerialFSM object.
  * Send a Message object from the back of the commandQueue to the Arduino.
  */
+/*** 
+*  run() sem.wait 0     stepmotor() sem.signal + 1
+*  Mutex.lock()         
+*  update() wait -1   
+*/
 
 std::mutex commandQueueMutex;
 void CatoptricRow::update() {
     // Send messages to Arduino (sends messages from all rows)
-	while(fsmCommandsOut() < MAX_CMDS_OUT) { 
+    while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
         // Lock the commandQueue
+        
         commandQueueMutex.lock();
-        if(commandQueue.size() > 0){
-            // Pop the last message from the queue
-            Message message = commandQueue.back();
-            commandQueue.pop_back();
-            commandQueueMutex.unlock();
-
-            sendMessageToArduino(message);
-        }
+        // Pop the last message from the queue
+        Message message = commandQueue.back();
+        commandQueue.pop_back();
         commandQueueMutex.unlock();
+        
+        sendMessageToArduino(message);
+        
+        surfaceSem.wait();
+
     }
 
+    sleep(RUN_SLEEP_TIME);
     char input;
     // Read incoming data from Arduino
     while(read(serial_fd, &input, 1) > 0) {
+        printf("%c", input);
         fsm.Execute(input);
         if(fsm.messageReady) {
             printf("Incoming message:%s\n", fsm.message);
@@ -180,19 +190,17 @@ void CatoptricRow::reset(bool test) {
         for(int i = 0; i < numMirrors; ++i) {
             /* Orientation of mirrors isn't guaranteed after executing this, 
              * shouldn't use with 'test'=true for anything but debugging! */
-            stepMotor(i + 1, PAN_IND, MOTOR_FORWARD, MOTOR_TEST_ARC);
-            stepMotor(i + 1, PAN_IND, MOTOR_BACKWARD, MOTOR_TEST_ARC);
-            stepMotor(i + 1, TILT_IND, MOTOR_FORWARD, MOTOR_TEST_ARC);
-            stepMotor(i + 1, TILT_IND, MOTOR_BACKWARD, MOTOR_TEST_ARC);
+            stepMotor(i, PAN_IND, MOTOR_FORWARD, MOTOR_TEST_ARC);
+            stepMotor(i, PAN_IND, MOTOR_BACKWARD, MOTOR_TEST_ARC);
+            stepMotor(i, TILT_IND, MOTOR_FORWARD, MOTOR_TEST_ARC);
+            stepMotor(i, TILT_IND, MOTOR_BACKWARD, MOTOR_TEST_ARC);
         }
     } else {
         for(int i = 0; i < numMirrors; ++i) {
-            stepMotor(i + 1, PAN_IND, MOTOR_BACKWARD, MOTOR_RESET_ARC);
-            stepMotor(i + 1, TILT_IND, MOTOR_BACKWARD, MOTOR_RESET_ARC);
+            stepMotor(i, PAN_IND, MOTOR_BACKWARD, MOTOR_RESET_ARC);
+            stepMotor(i, TILT_IND, MOTOR_BACKWARD, MOTOR_RESET_ARC);
         }
     }
-
-    update();
 }
 
 /* Get the SerialFSM's currentCommandsToArduino */
