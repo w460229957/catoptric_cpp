@@ -27,8 +27,6 @@ void CatoptricController::moveMirror(const int rowNum, const int mirrorID, const
 CatoptricController::CatoptricController(): surface{new CatoptricSurface()}
 {
     //Initialize one thread for each surface
-    
-
     std::cout << "CatoptricController initialized" << std::endl;
 }
 
@@ -37,9 +35,8 @@ CatoptricController::CatoptricController(): surface{new CatoptricSurface()}
  */
 
 
-void CatoptricController::run() {
-    //wake up the CatoptricSurface thread
-
+void CatoptricController::run(int argc,char * argv[]) {
+    
     while(CONTROLLER_RUNNING) { // Infinite event loop
 
         // Retrieve any new CSV files

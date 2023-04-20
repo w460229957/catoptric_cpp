@@ -38,5 +38,5 @@ class CatoptricController {
     public:
         void moveMirror(const int, const int, const int, const int,const int);
         CatoptricController();
-        void run();
+        void run(int argc, char * argv[]);
 };

@@ -9,6 +9,6 @@
 
 int main(int argc, char* argv[]) {
     CatoptricController catCon;
-    catCon.run();
+    catCon.run(argc,argv);
     return RET_SUCCESS;
 }

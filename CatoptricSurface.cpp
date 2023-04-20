@@ -92,6 +92,7 @@ void CatoptricSurface::run() {
 
 
 CatoptricSurface::~CatoptricSurface(){
+    //Terminate the thread
     running = false;
     surfaceSemaphore.signal_all();
     surfaceThread.join();
