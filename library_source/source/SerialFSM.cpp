@@ -4,7 +4,7 @@
  * debug messages at this point.
  */
 
-#include "SerialFSM.hpp"
+#include "../header/SerialFSM.hpp"
 
 using namespace std;
 

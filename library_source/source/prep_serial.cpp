@@ -2,7 +2,7 @@
 /* Must first execute 'sudo adduser $USER dialout' on Pi
  */
 
-#include "prep_serial.hpp"
+#include "../header/prep_serial.hpp"
 
 /* Takes a string containing the serial port to be configured.
  * Creates a termios struct, configures it for output, 

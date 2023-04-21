@@ -8,10 +8,10 @@
 #include <unistd.h>
 #include <errno.h> 
 #include <thread>
-#include "CatoptricSurface.hpp"
-#include "ErrCodes.hpp"
+#include "../header/CatoptricSurface.hpp"
+#include "../header/ErrCodes.hpp"
 #include <iostream>
-#include "Semaphore.hpp"
+#include "../header/Semaphore.hpp"
 using namespace std;
 
 /* Each row reads incoming data and updates its SerialFSM object, sends queued

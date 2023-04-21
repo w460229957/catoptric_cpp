@@ -2,7 +2,7 @@
 #include <iostream> // cin
 #include <sstream> // stringstream
 #include <algorithm> // transform
-#include "CatoptricController.hpp"
+#include "../header/CatoptricController.hpp"
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <cstdio>

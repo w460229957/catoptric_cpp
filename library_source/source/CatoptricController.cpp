@@ -10,7 +10,7 @@
 #include <iostream> // cin
 #include <sstream> // stringstream
 #include <algorithm> // transform
-#include "CatoptricController.hpp"
+#include "../header/CatoptricController.hpp"
 using namespace std;
 
 void CatoptricController::moveMirror(const int rowNum, const int mirrorID, const int whichMotor, const int directionOfTheMotor, const int steps)

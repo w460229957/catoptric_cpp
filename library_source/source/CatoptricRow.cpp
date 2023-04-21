@@ -6,12 +6,12 @@
 #include <vector>
 #include <unistd.h>
 #include <mutex>
-#include "CatoptricRow.hpp"
-#include "CatoptricSurface.hpp"
-#include "Semaphore.hpp"
-#include "SerialFSM.hpp"
-#include "prep_serial.hpp"
-#include "ErrCodes.hpp"
+#include "../header/CatoptricRow.hpp"
+#include "../header/CatoptricSurface.hpp"
+#include "../header/Semaphore.hpp"
+#include "../header/SerialFSM.hpp"
+#include "../header/prep_serial.hpp"
+#include "../header/ErrCodes.hpp"
 
 using namespace std;
 
