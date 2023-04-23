@@ -3,7 +3,6 @@
 #include <sstream> // stringstream
 #include <algorithm> // transform
 #include "../header/CatoptricController.hpp"
-#include <sys/epoll.h>
 #include <unistd.h>
 #include <cstdio>
 

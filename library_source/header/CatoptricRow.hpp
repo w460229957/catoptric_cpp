@@ -4,7 +4,7 @@
 #include <vector>
 #include "SerialFSM.hpp"
 #include <mutex>
-#include "Semaphore.hpp"
+#include "CommandQueue.hpp"
 #define MAX_CMDS_OUT  32
 #define FLUSH_IN_OUT  2
 #define NUM_MSG_ELEMS 8
@@ -37,17 +37,36 @@ struct Message {
 
     int rowNum, mirrorID, whichMotor, direction, newPos;
     int countHigh, countLow;
-    Message(int row_in, int mirror_in, int motor_in, int dir_in, 
-            int chigh_in, int clow_in);
-    Message(int mirrorRow, int mirrorColumn, int motorNumber, int position);
+    Message(int mirrorRow, int mirrorColumn, int motorNumber, int direction, 
+        int position, int countHigh, int countLow)
+        :
+        rowNum(mirrorRow), mirrorID(mirrorColumn), whichMotor(motorNumber),
+        direction(direction), newPos(position), countHigh(countHigh),
+        countLow(countLow) {};
+    Message(int mirrorRow, int mirrorColumn, int motorNumber, int direction, 
+        int countHigh, int countLow)
+        :
+        rowNum(mirrorRow), mirrorID(mirrorColumn), whichMotor(motorNumber),
+        direction(direction), newPos(0), countHigh(countHigh),
+        countLow(countLow) {};
+    Message(int mirrorRow, int mirrorColumn, int motorNumber, int direction, 
+    int position)
+    :Message(mirrorRow, mirrorColumn, motorNumber, direction,
+    position, 0, 0) {};
+    Message(int mirrorRow, int mirrorColumn, int motorNumber, int position):
+        Message(mirrorRow, mirrorColumn, motorNumber, 0, position) {};
+
     std::vector<char> toVec(); 
+    //define a conversion operator to convert a Message to a string
+    operator std::string() const;
+    friend std::ostream& operator<<(std::ostream& os, const Message& msg);
 };
 /* Encodes the state of a row of mirrors/motors and the corresponding Arduino */
 class CatoptricRow {
 
     private:
-        //Reference to the counting semaphore for the number of commands
-        CountingSemaphore & surfaceSem;
+        //Number of messages in the command queue
+
         // File descriptor of serial port written to for its Arduino
         int serial_fd;
         int rowNumber, numMirrors;
@@ -55,21 +74,19 @@ class CatoptricRow {
            each subordinate motor */
         std::vector<MotorState> motorStates;
 
-        int setupSerial(const char *serial_port_in);
-        void sendMessageToArduino(Message message);
+        int setupSerial(const std::string&);
+        void sendMessageToArduino(Message);
 
 
     public:
-        void stepMotor(int mirrorID, int whichMotor, int direction, 
-                float delta_pos); 
+        void stepMotor(int, int, int, 
+                float); 
         // Queue of pending Message objects to be transmitted to Arduino
-        std::vector<Message> commandQueue;
+        std::unique_ptr<CommandQueue<Message>> commandQueue;
         // FSM controlling this Arduino
         SerialFSM fsm;
-
-        CatoptricRow(int rowNumber_in, int numMirrors_in, 
-                const char *serial_port_in,CountingSemaphore & surfaceSem_in);
-
+        CatoptricRow(int & , int &,std::string&);
+        CatoptricRow(CatoptricRow&&);
 	    void reset(bool test);
         void update();
         int resetSerialBuffer();

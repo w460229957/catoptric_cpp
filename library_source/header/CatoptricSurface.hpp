@@ -5,7 +5,7 @@
 #include "CatoptricRow.hpp"
 #include "SerialFSM.hpp"
 #include <thread>
-#include "Semaphore.hpp"
+#include <future>
 #define STR_EQ 0
 #define UNDEF_ORDER -4
 
@@ -72,10 +72,8 @@ class SurfaceDimensions {
 class CatoptricSurface {
 
     private:
-        //Counding semaphore for the surface
-        CountingSemaphore surfaceSemaphore;
         // Thread for running the surface
-        std::thread surfaceThread;
+        std::future<void> future;
         //Automatic bool to determine if surface is running
         bool running;
         // Number of rows in surface
@@ -103,11 +101,10 @@ class CatoptricSurface {
                 int& mirrorColumn, int& motorNumber, int& position);
         int initSerialPortOrder(std::string portsMapFile);
         void drawProgressBar(int total, int ackd);
-        void update();
     public:
         CatoptricSurface();
         ~CatoptricSurface();
-        void run();
+        void update();
         void reset(bool test);
         void updateByCSV(std::string path);
         void cleanup();

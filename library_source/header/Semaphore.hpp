@@ -17,7 +17,6 @@ public:
         //wait() will unlock the mutex and suspend the thread until the condition variable is notified
         std::unique_lock<std::mutex> lock(mutex);
         cv.wait(lock, [this]{return count > 0;});//Lambda function takes this pointer as an argument
-        --count;
     }
 
     void signal() {

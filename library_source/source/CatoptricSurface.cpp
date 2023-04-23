@@ -8,10 +8,11 @@
 #include <unistd.h>
 #include <errno.h> 
 #include <thread>
+#include <iomanip> // setw, setfill
 #include "../header/CatoptricSurface.hpp"
 #include "../header/ErrCodes.hpp"
 #include <iostream>
-#include "../header/Semaphore.hpp"
+#include <future>
 using namespace std;
 
 /* Each row reads incoming data and updates its SerialFSM object, sends queued
@@ -19,16 +20,13 @@ using namespace std;
  * Sleep and print update message.
  */
 
-
-
+extern CommandQueue<std::function<void(CatoptricSurface*)>> PendingCommands;
 void CatoptricSurface::update(){
-    std::cout << "Updating surface...:[" << std::this_thread::get_id()<<"]" << std::endl;
-    printf("\n\n");
     /* Each row reads incoming data and updates SerialFSM objects, 
-        sends messages from the back of respective commandQueue */
-        int commandsOut = 0, updates = 0;
-        int commandsQueue = 0, ackCount = 0, nackCount = 0;
-    do{
+    sends messages from the back of respective commandQueue */
+    int commandsOut = 0, updates = 0;
+    int commandsQueue = 0, ackCount = 0, nackCount = 0;
+    do {
         commandsOut = 0;
         commandsQueue = 0;
         ackCount = 0;
@@ -38,21 +36,21 @@ void CatoptricSurface::update(){
             commandsOut += cr.fsmCommandsOut();
             ackCount += cr.fsmAckCount();
             nackCount += cr.fsmNackCount();
-            commandsQueue += cr.commandQueue.size();
+            commandsQueue += cr.commandQueue->size();
         } 
 
         updates++;
         sleep(RUN_SLEEP_TIME);
         // 'commands in queue' is nonzero only when too many commands are
         // pending and no more can be sent
-        printf("\r%2d commands out | %d commands in queue | %2d acks | "
-                "%d nacks | %d cycles\n", commandsOut, commandsQueue, ackCount, 
-                nackCount, updates);
+        std::cout << std::setw(2) << std::setfill('0') << commandsOut << " commands out | "
+                << commandsQueue << " commands in queue | "
+                << std::setw(2) << std::setfill('0') << ackCount << " acks | "
+                << nackCount << " nacks | "
+                << updates << " cycles\n";
         drawProgressBar(commandsOut + ackCount, ackCount);
-        printf("\033[F"); // Moves stdout cursor up one line
-
-        printf("\n\n");
-    }while(commandsOut - (ackCount + nackCount)> 0);
+        std::cout << "\033[F\n\n" << std::endl;; // Moves stdout cursor up one line
+    } while (commandsOut - (ackCount + nackCount) > 0);
 
     for(CatoptricRow& cr : rowInterfaces) {
         cr.fsm.ackCount = 0;
@@ -60,7 +58,7 @@ void CatoptricSurface::update(){
     }
 }
 
-CatoptricSurface::CatoptricSurface(): surfaceSemaphore(),running(true){
+CatoptricSurface::CatoptricSurface():running(true){
 
     SERIAL_INFO_PREFIX = SERIAL_INFO_PREFIX_MACRO;
 
@@ -68,34 +66,36 @@ CatoptricSurface::CatoptricSurface(): surfaceSemaphore(),running(true){
 
     serialPorts = getOrderedSerialPorts();
     numRowsConnected = serialPorts.size();
-    
+
     dimensions.initDimensions(DIMENSIONS_FILENAME);
     setupRowInterfaces();
     
     sleep(SETUP_SLEEP_TIME);
 
     setbuf(stdout, NULL);
-    //create a thread to run the run() function
-    //The thread will run until the destructor is called
-    //Note that Thread default constructor does not create a thread
-    //The thread is created when the thread object is assigned to a thread with the = operator
-    //Or when the thread object is constructed with a parameterized constructor
-    surfaceThread = std::thread(&CatoptricSurface::run, this);
-}
-
-void CatoptricSurface::run() {
-    while(running){
-        surfaceSemaphore.wait();
-        update();
-    }
+    future = async(launch::async,[this](){
+        while(running){
+            auto command = PendingCommands.try_pop();
+            if(command){
+            try{
+                (*command)(this);
+            }catch(const std::exception & e){
+                std::cout << "Exception occured during async move process.."<<std::endl;
+                std::cout << e.what() << std::endl;
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+            else{
+                std::this_thread::sleep_for(std::chrono::seconds(2));
+            }  
+        }
+    });
 }
 
 
 CatoptricSurface::~CatoptricSurface(){
-    //Terminate the thread
     running = false;
-    surfaceSemaphore.signal_all();
-    surfaceThread.join();
+    future.get();
 }
 
 /* Reads a config file to populate the map of Arduino USB ids to row numbers.
@@ -169,7 +169,8 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
  * Serial ports reside in the base directory passed to the function.
  * Return vector of SerialPort objects representing only connected Arduinos.
  */
-vector<SerialPort> CatoptricSurface::readSerialPorts(string baseDir) {
+vector<SerialPort> CatoptricSurface::readSerialPorts(string baseDir)
+{
 
     vector<SerialPort> serialPorts;
 
@@ -219,17 +220,13 @@ void CatoptricSurface::setupRowInterfaces() {
     for(SerialPort sp : serialPorts) {
         
         string port = sp.device;
-        char cstr[port.size()];
-        strcpy(cstr, port.c_str());
 
         int rowNum = sp.row;
         int rowLen = dimensions.getLength(rowNum);
 
 		printf(" -- Initializing Catoptric Row %d with %d mirrors\n", 
                 rowNum, rowLen);
-
-        CatoptricRow cr(rowNum, rowLen, cstr,surfaceSemaphore);
-	    rowInterfaces.push_back(cr);
+	    rowInterfaces.emplace_back(rowNum,rowLen,port);
     }
 }
 
@@ -329,7 +326,7 @@ void CatoptricSurface::updateByCSV(string path) {
         }
     }
 
-    run();
+    update();
 }
 
 /* Assign fields for new Message based on specified line from csvData.
@@ -467,9 +464,8 @@ void CatoptricSurface::cleanup() {
  * @return  void
 */
 void CatoptricSurface::moveMirror(const int rowNum, const int mirrorID, const int whichMotor, const int directionOfTheMotor,const int steps){
-    if(rowNum < 1 || rowNum > NUM_ROWS) {
-        printf("Invalid row number passed to moveMirror: %d\n", rowNum);
-        return;
+    if(rowInterfaces.size() < (size_t)rowNum || rowNum < 1) {
+        throw invalid_argument("Row number out of bounds in moveMirror->Input: " + to_string(rowNum));
     }
     rowInterfaces[rowNum - 1].stepMotor(mirrorID, whichMotor, directionOfTheMotor, steps);
 }

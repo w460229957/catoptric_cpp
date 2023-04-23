@@ -6,51 +6,39 @@
 #include <vector>
 #include <unistd.h>
 #include <mutex>
+#include <iostream>
+#include <sstream>
 #include "../header/CatoptricRow.hpp"
 #include "../header/CatoptricSurface.hpp"
 #include "../header/Semaphore.hpp"
 #include "../header/SerialFSM.hpp"
 #include "../header/prep_serial.hpp"
 #include "../header/ErrCodes.hpp"
-
 using namespace std;
 
 /* Read all input from the corresponding serial port and update the CatoptricRow
  * object's SerialFSM object.
  * Send a Message object from the back of the commandQueue to the Arduino.
  */
-/*** 
-*  run() sem.wait 0     stepmotor() sem.signal + 1
-*  Mutex.lock()         
-*  update() wait -1   
-*/
 
-std::mutex commandQueueMutex;
+
+
+extern CommandQueue<Command> commandQueue;
+
 void CatoptricRow::update() {
     // Send messages to Arduino (sends messages from all rows)
-    while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue.size() > 0) { 
-        // Lock the commandQueue
-        
-        commandQueueMutex.lock();
+    while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue->size() > 0) { 
         // Pop the last message from the queue
-        Message message = commandQueue.back();
-        commandQueue.pop_back();
-        commandQueueMutex.unlock();
-        
-        sendMessageToArduino(message);
-        
-        surfaceSem.wait();
-
+        auto message = commandQueue->try_pop();
+        sendMessageToArduino(*message);
     }
 
     sleep(RUN_SLEEP_TIME);
     char input;
     // Read incoming data from Arduino
     while(read(serial_fd, &input, 1) > 0) {
-        printf("%c", input);
         fsm.Execute(input);
         if(fsm.messageReady) {
-            printf("Incoming message:%s\n", fsm.message);
             fsm.messageReady = false;
             fsm.clearMsg();
         }
@@ -59,8 +47,8 @@ void CatoptricRow::update() {
 }
 
 
-CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn, 
-        const char *serialPortIn, CountingSemaphore & surfaceSem):surfaceSem(surfaceSem) {
+CatoptricRow::CatoptricRow(int & rowNumberIn, int & numMirrorsIn, 
+        std::string& serialPortIn){
 
 	rowNumber = rowNumberIn;
 	numMirrors = numMirrorsIn;
@@ -77,10 +65,10 @@ CatoptricRow::CatoptricRow(int rowNumberIn, int numMirrorsIn,
 
 /* Prepare the correpsonding serial port for IO (termios).
  */
-int CatoptricRow::setupSerial(const char *serialPortIn) {
+int CatoptricRow::setupSerial(const std::string& serialPortIn) {
     
     // Returns fd for configured serial port
-    serial_fd = prep_serial(serialPortIn); 
+    serial_fd = prep_serial(serialPortIn.c_str()); 
     
     // Flush residual data in buffer
     resetSerialBuffer();
@@ -112,7 +100,7 @@ void CatoptricRow::sendMessageToArduino(Message message) {
 	for(int i = 0; i < NUM_MSG_ELEMS; ++i) {
 		bCurrent = message_vec[i];
         if(write(serial_fd, &bCurrent, 1) < 0) {
-            printf("write error: %s\n", strerror(errno));
+            std::cout << "write error-> "  << message << std::endl;
             return;
         }
     }
@@ -141,15 +129,8 @@ void CatoptricRow::stepMotor(int mirrorID, int whichMotor,
 	Message message (rowNumber, mirrorID, whichMotor, direction, 
             countHigh, countLow);
     
-    //Critial Section
-    //acquire commandQueueMutex here
-    commandQueueMutex.lock();
-	commandQueue.push_back(message);
-    commandQueueMutex.unlock();
 
-    //Signal that the commandQueue has been updated
-    surfaceSem.signal();
-    //release commandQueueMutex here
+	commandQueue->push(message);
 }
 
 /* Push a Message onto the commandQueue and update motorStates. 
@@ -239,24 +220,6 @@ MotorState::MotorState(int panIn, int tiltIn) {
     motor[TILT_IND] = tiltIn;
 }
 
-Message::Message(int row_in, int mirror_in, int motor_in, int dir_in, 
-        int chigh_in, int clow_in) {
-    rowNum = row_in;
-    mirrorID = mirror_in;
-    whichMotor = motor_in;
-    direction = dir_in;
-    countHigh = chigh_in;
-    countLow = clow_in;
-}
-
-Message::Message(int mirrorRow, int mirrorColumn, int motorNumber, 
-        int position) {
-    rowNum = mirrorRow;
-    mirrorID = mirrorColumn;
-    whichMotor = motorNumber;
-    newPos = position;
-}
-
 /* Convert the message into a serialized byte vector that can be sent to
  * the Arduino.
  */
@@ -273,4 +236,22 @@ vector<char> Message::toVec() {
     msgVec.push_back(countLow);
 
     return msgVec;
+}
+
+
+/*Convert a message into string
+*
+*/
+Message::operator std::string() const{
+    std::stringstream ss;
+    ss << "Message: " << rowNum << " " << mirrorID << " " << whichMotor << " " << direction << " " << countHigh << " " << countLow;
+    return ss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const Message& msg){
+    os << "Row: " << msg.rowNum << " Mirror: " << msg.mirrorID << " Motor: " 
+        << msg.whichMotor << " Direction: " << msg.direction << " New Pos: " 
+        << msg.newPos << " Count High: " << msg.countHigh << " Count Low: " 
+        << msg.countLow;
+    return os;
 }
