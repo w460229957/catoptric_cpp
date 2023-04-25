@@ -1,12 +1,12 @@
 
 #include <algorithm> // sort
 #include <stdlib.h>
-#include <cstdio>      // snprintf
+#include <cstdio> // snprintf
 #include <sstream>
 #include <fstream>
 #include <sys/types.h>
 #include <unistd.h>
-#include <errno.h> 
+#include <errno.h>
 #include <thread>
 #include <iomanip> // setw, setfill
 #include "../header/CatoptricSurface.hpp"
@@ -20,45 +20,36 @@ using namespace std;
  * Sleep and print update message.
  */
 
-extern CommandQueue<std::function<void(CatoptricSurface*)>> PendingCommands;
-void CatoptricSurface::update(){
-    /* Each row reads incoming data and updates SerialFSM objects, 
+static atomic<int> commandsOut,updates,commandsQueue,ackCount,nackCount{0};
+extern CommandQueue<std::function<void(CatoptricSurface *)>> PendingCommands;
+void CatoptricSurface::update()
+{
+    /* Each row reads incoming data and updates SerialFSM objects,
     sends messages from the back of respective commandQueue */
-    int commandsOut = 0, updates = 0;
-    int commandsQueue = 0, ackCount = 0, nackCount = 0;
-    do {
-        commandsOut = 0;
-        commandsQueue = 0;
-        ackCount = 0;
-        nackCount = 0;
-        for(CatoptricRow& cr : rowInterfaces){
-            cr.update();
-            commandsOut += cr.fsmCommandsOut();
-            ackCount += cr.fsmAckCount();
-            nackCount += cr.fsmNackCount();
-            commandsQueue += cr.commandQueue->size();
-        } 
-
-        updates++;
-        sleep(RUN_SLEEP_TIME);
-        // 'commands in queue' is nonzero only when too many commands are
-        // pending and no more can be sent
-        std::cout << std::setw(2) << std::setfill('0') << commandsOut << " commands out | "
-                << commandsQueue << " commands in queue | "
-                << std::setw(2) << std::setfill('0') << ackCount << " acks | "
-                << nackCount << " nacks | "
-                << updates << " cycles\n";
-        drawProgressBar(commandsOut + ackCount, ackCount);
-        std::cout << "\033[F\n\n" << std::endl;; // Moves stdout cursor up one line
-    } while (commandsOut - (ackCount + nackCount) > 0);
-
-    for(CatoptricRow& cr : rowInterfaces) {
-        cr.fsm.ackCount = 0;
-        cr.fsm.nackCount = 0;
+    for (CatoptricRow &cr : rowInterfaces)
+    {
+        cr.update();
+        commandsOut += cr.fsmCommandsOut();
+        ackCount += cr.fsmAckCount();
+        nackCount += cr.fsmNackCount();
+        commandsQueue += cr.commandQueue->size();
     }
+
+    updates++;
+    // 'commands in queue' is nonzero only when too many commands are
+    // pending and no more can be sent
+    std::cout << std::setw(2) << std::setfill(' ') << commandsOut << " commands out | "
+            << commandsQueue << " commands in queue | "
+            << std::setw(2) << std::setfill(' ') << ackCount << " acks | "
+            << nackCount << " nacks | "
+            << updates << " cycles\n";
+    drawProgressBar(commandsOut + ackCount, ackCount);
+    std::cout << "\033[F\n\n"
+            << std::endl;
 }
 
-CatoptricSurface::CatoptricSurface():running(true){
+CatoptricSurface::CatoptricSurface() : running(true)
+{
 
     SERIAL_INFO_PREFIX = SERIAL_INFO_PREFIX_MACRO;
 
@@ -69,31 +60,30 @@ CatoptricSurface::CatoptricSurface():running(true){
 
     dimensions.initDimensions(DIMENSIONS_FILENAME);
     setupRowInterfaces();
-    
+    std::cout << "here" << std::endl;
     sleep(SETUP_SLEEP_TIME);
 
     setbuf(stdout, NULL);
-    future = async(launch::async,[this](){
+    future = async(launch::async, [this]()
+                   {
         while(running){
-            auto command = PendingCommands.try_pop();
+            auto command = PendingCommands.pop();
             if(command){
-            try{
-                (*command)(this);
-            }catch(const std::exception & e){
-                std::cout << "Exception occured during async move process.."<<std::endl;
-                std::cout << e.what() << std::endl;
+                try{
+                    (*command)(this);
+                }catch(const std::exception & e){
+                    std::cout << "Exception occured during async move process.."<<std::endl;
+                    std::cout << e.what() << std::endl;
+                }
             }
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            }
-            else{
-                std::this_thread::sleep_for(std::chrono::seconds(2));
-            }  
-        }
-    });
+            update();
+            std::this_thread::sleep_for(std::chrono::seconds(3));  
+        } });
 }
 
-
-CatoptricSurface::~CatoptricSurface(){
+CatoptricSurface::~CatoptricSurface()
+{
+    std::cout << "exiting....." << std::endl;
     running = false;
     future.get();
 }
@@ -102,44 +92,52 @@ CatoptricSurface::~CatoptricSurface(){
  * Each line in the config file is a serial number followed by a space and
  * then the respective row number.
  */
-int CatoptricSurface::initSerialPortOrder(string portsMapFilename) {
+int CatoptricSurface::initSerialPortOrder(string portsMapFilename)
+{
 
     fstream portsMapStream;
     portsMapStream.open(portsMapFilename.c_str(), ios::in);
     string line, arduino_id_str, row_str;
     int row_int;
-    if(portsMapStream.is_open()) {
-        while(getline(portsMapStream, line)) {
+    if (portsMapStream.is_open())
+    {
+        while (getline(portsMapStream, line))
+        {
             istringstream iss(line);
             iss >> arduino_id_str;
             iss >> row_str;
-            try {
+            try
+            {
                 row_int = stoi(row_str);
-            } catch(...) {
+            }
+            catch (...)
+            {
                 printf("Ill-formatted row number");
                 return ERR_STOI;
             }
 
             serialPortOrder.addPort(
-                    SerialPort(arduino_id_str.c_str(), row_int));
+                SerialPort(arduino_id_str.c_str(), row_int));
         }
 
         portsMapStream.close();
     }
-    
+
     return RET_SUCCESS;
 }
 
 /* Returns a vector of SerialPort objects each representing a connected Arduino,
- * sorted by serial number. 
+ * sorted by serial number.
  */
-vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
+vector<SerialPort> CatoptricSurface::getOrderedSerialPorts()
+{
 
     string path = DEVICE_PATH;
     string ls_id_cmd = "ls " + path + " > " + LS_ID_FILENAME;
 
     int ret = system(ls_id_cmd.c_str());
-    if(ret == NO_DEVICES) {
+    if (ret == NO_DEVICES)
+    {
         printf("No devices detected in \'%s\'\n", DEVICE_PATH);
         return vector<SerialPort>();
     }
@@ -147,10 +145,11 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
     // Read VFS entries for serial ports from 'ls' output
     vector<SerialPort> serialPorts = readSerialPorts(path);
 
-
-    struct serialComp {
+    struct serialComp
+    {
         // Used to sort serial ports by their Arduino's serial number
-        bool operator() (SerialPort a, SerialPort b) {
+        bool operator()(SerialPort a, SerialPort b)
+        {
             return a.serialNumber.compare(b.serialNumber) < 0;
         }
     } serialCompObj;
@@ -158,7 +157,8 @@ vector<SerialPort> CatoptricSurface::getOrderedSerialPorts() {
     // Sort serial ports by their serial number
     sort(serialPorts.begin(), serialPorts.end(), serialCompObj);
 
-    for(SerialPort sp : serialPorts) {
+    for (SerialPort sp : serialPorts)
+    {
         printf("Arduino #%s : Row #%d\n", sp.serialNumber.c_str(), sp.row);
     }
 
@@ -176,31 +176,39 @@ vector<SerialPort> CatoptricSurface::readSerialPorts(string baseDir)
 
     fstream serialInfoFile;
     serialInfoFile.open(LS_ID_FILENAME, ios::in);
-    if(serialInfoFile.is_open()) {
+    if (serialInfoFile.is_open())
+    {
         string serialInfoLine;
-        while(getline(serialInfoFile, serialInfoLine)) {
+        while (getline(serialInfoFile, serialInfoLine))
+        {
             string serialNumber;
-            
+
             /* Format of Arduino Uno's file name in /dev/serial/by-id is
              *     usb-Arduino__www.arduino.cc__0043_XXXXXXXXXXXXXXXXXXX-YYYY
              * for serial number X's (SERIAL_INFO_PREFIX contains the prefix)
              */
 
-            if(serialInfoLine.find(SERIAL_INFO_PREFIX) != string::npos) {
+            if (serialInfoLine.find(SERIAL_INFO_PREFIX) != string::npos)
+            {
                 serialNumber = serialInfoLine.substr(SERIAL_INFO_PREFIX.size(),
-                        SERIAL_NUM_LEN);
+                                                     SERIAL_NUM_LEN);
             }
 
             int row = serialPortOrder.getRow(serialNumber);
-            if(row == ERR_QUERY_FAILED) {
-                printf("Unrecognized device: serialNumber %s\n", 
-                        serialNumber.c_str());
-            } else {
+            if (row == ERR_QUERY_FAILED)
+            {
+                printf("Unrecognized device: serialNumber %s\n",
+                       serialNumber.c_str());
+            }
+            else
+            {
 
                 string path;
-                if(baseDir.empty()) path = "./" + serialInfoLine;
-                else path = baseDir + "/" + serialInfoLine;
-                
+                if (baseDir.empty())
+                    path = "./" + serialInfoLine;
+                else
+                    path = baseDir + "/" + serialInfoLine;
+
                 printf(" *** Detected serial port %s ***\n", path.c_str());
 
                 serialPorts.push_back(SerialPort(serialNumber, row, path));
@@ -216,73 +224,89 @@ vector<SerialPort> CatoptricSurface::readSerialPorts(string baseDir)
 /* Initializes a CatoptricRow object for each available Arduino.
  * Populates rowInterfaces accordingly.
  */
-void CatoptricSurface::setupRowInterfaces() {
-    for(SerialPort sp : serialPorts) {
-        
+void CatoptricSurface::setupRowInterfaces()
+{
+    for (SerialPort sp : serialPorts)
+    {
+
         string port = sp.device;
 
         int rowNum = sp.row;
         int rowLen = dimensions.getLength(rowNum);
 
-		printf(" -- Initializing Catoptric Row %d with %d mirrors\n", 
-                rowNum, rowLen);
-	    rowInterfaces.emplace_back(rowNum,rowLen,port);
+        printf(" -- Initializing Catoptric Row %d with %d mirrors\n",
+               rowNum, rowLen);
+        rowInterfaces.emplace_back(rowNum, rowLen, port);
     }
+
+ 
+    std::cout << "rowInterfaces size: " << rowInterfaces.size() << std::endl;
 }
 
-/* Reset the orientation of every mirror or test functionality of the 
+/* Reset the orientation of every mirror or test functionality of the
  * motors/connection (depending on 'test' parameter) and resume running.
  */
-void CatoptricSurface::reset(bool test) {
-    if(!test) printf(" -- Resetting all mirrors to default position\n");
-    else printf(" -- Testing all motors\n");
+void CatoptricSurface::reset(bool test)
+{
+    if (!test)
+        printf(" -- Resetting all mirrors to default position\n");
+    else
+        printf(" -- Testing all motors\n");
 
-    for(CatoptricRow& cr : rowInterfaces) {
-        cr.reset(test); // Reset whole row
+    for (CatoptricRow &cr : rowInterfaces)
+    {
+        cr.reset(test); 
     }
 }
 
 /* Clear the old cached CSV data.
  * Read the new passed CSV file and insert cells into csvData (omit delimiters).
  */
-void CatoptricSurface::getCSV(string path) {
+void CatoptricSurface::getCSV(string path)
+{
 
     csvData.clear(); // Clear old, cached CSV data
 
     bool readData = false;
     ifstream fs(path.c_str());
-    while(fs && !fs.eof()) {
+    while (fs && !fs.eof())
+    {
         readData = true;
         // Get vector of next line's elements
         vector<string> nextLinesCells = getNextLineAndSplitIntoTokens(fs);
         // Append the next line's cells onto csvData
-        csvData.insert(csvData.end(), nextLinesCells.begin(), 
-                nextLinesCells.end());
-   }
+        csvData.insert(csvData.end(), nextLinesCells.begin(),
+                       nextLinesCells.end());
+    }
 
-   if(!readData) printf("Didn't read data from CSV %s\n", path.c_str());
+    if (!readData)
+        printf("Didn't read data from CSV %s\n", path.c_str());
 
-   fs.close();
+    fs.close();
 }
 
 /* Returns a vector of all cells in the next unread line from the CSV
  * corresponding to the passed i(f)stream.
  */
-vector<string> CatoptricSurface::getNextLineAndSplitIntoTokens(istream& strm) {
-    
+vector<string> CatoptricSurface::getNextLineAndSplitIntoTokens(istream &strm)
+{
+
     vector<string> result;
     string line, cell;
-    
+
     getline(strm, line);
     stringstream lineStream(line);
 
-    while(getline(lineStream, cell, ',')) {
+    while (getline(lineStream, cell, ','))
+    {
         result.push_back(cell);
     }
 
-    if(result.size() == 0 && line.size() > 0) {
+    if (result.size() == 0 && line.size() > 0)
+    {
         printf("Failed to read data from CSV line [%s] in "
-                "getNextLineAndSplitIntoTokens\n", line.c_str());
+               "getNextLineAndSplitIntoTokens\n",
+               line.c_str());
     }
 
     return result;
@@ -293,17 +317,20 @@ vector<string> CatoptricSurface::getNextLineAndSplitIntoTokens(istream& strm) {
  * contents of the CSV.
  * Resume running.
  */
-void CatoptricSurface::updateByCSV(string path) {
+void CatoptricSurface::updateByCSV(string path)
+{
 
-    getCSV(path);   // Read in CSV contents to csvData
+    getCSV(path); // Read in CSV contents to csvData
 
-    for(CatoptricRow& cr : rowInterfaces) {
+    for (CatoptricRow &cr : rowInterfaces)
+    {
         cr.resetSerialBuffer();
     }
 
     // Synthesize a Message object per CSV line (four cells per line)
-    for(unsigned csvLineInd = 0; csvLineInd < csvData.size(); csvLineInd += 4) {
-        
+    for (unsigned csvLineInd = 0; csvLineInd < csvData.size(); csvLineInd += 4)
+    {
+
         int rowRead, mirrorColumn, motorNumber, position;
         parseCSVLine(csvLineInd, rowRead, mirrorColumn, motorNumber, position);
 
@@ -312,17 +339,21 @@ void CatoptricSurface::updateByCSV(string path) {
 
         /* Remember that row numbers are 1-indexed in the protocol, but
            0-indexed in these data structures! */
-        for(int rowInd = 0; rowInd < NUM_ROWS; ++rowInd) {
-            if(rowRead == rowInterfaces[rowInd].getRowNumber()) {
+        for (int rowInd = 0; rowInd < NUM_ROWS; ++rowInd)
+        {
+            if (rowRead == rowInterfaces[rowInd].getRowNumber())
+            {
                 foundRow = true;
                 rowInterfaces[rowRead - 1].reorientMirrorAxis(msg);
                 break;
             }
         }
 
-        if(!foundRow) {
+        if (!foundRow)
+        {
             printf("Line %d of CSV is addressed to a row that does not exist"
-                    ": %d (protocol is 1-indexed!)", csvLineInd, rowRead);
+                   ": %d (protocol is 1-indexed!)",
+                   csvLineInd, rowRead);
         }
     }
 
@@ -331,32 +362,39 @@ void CatoptricSurface::updateByCSV(string path) {
 
 /* Assign fields for new Message based on specified line from csvData.
  */
-void CatoptricSurface::parseCSVLine(int csvLineInd, int& rowRead, 
-        int& mirrorColumn, int& motorNumber, int& position) {
-    try {
-        rowRead      = stoi(csvData[csvLineInd]);
+void CatoptricSurface::parseCSVLine(int csvLineInd, int &rowRead,
+                                    int &mirrorColumn, int &motorNumber, int &position)
+{
+    try
+    {
+        rowRead = stoi(csvData[csvLineInd]);
         mirrorColumn = stoi(csvData[csvLineInd + 1]);
-        motorNumber  = stoi(csvData[csvLineInd + 2]);
-        position     = stoi(csvData[csvLineInd + 3]);
-    } catch(...) {
-        printf("Invalid CSV data passed to stoi in updateByCSV: %s\n", 
-                strerror(errno));
+        motorNumber = stoi(csvData[csvLineInd + 2]);
+        position = stoi(csvData[csvLineInd + 3]);
+    }
+    catch (...)
+    {
+        printf("Invalid CSV data passed to stoi in updateByCSV: %s\n",
+               strerror(errno));
         return;
     }
 }
 
-SerialPort::SerialPort() {
+SerialPort::SerialPort()
+{
     serialNumber = string();
     row = UNDEF_ORDER;
 }
 
-SerialPort::SerialPort(string numIn, int rowIn, string deviceIn) {
+SerialPort::SerialPort(string numIn, int rowIn, string deviceIn)
+{
     serialNumber = numIn;
     row = rowIn;
     device = deviceIn;
 }
 
-SerialPort::SerialPort(string numIn, int rowIn) {
+SerialPort::SerialPort(string numIn, int rowIn)
+{
     serialNumber = numIn;
     row = rowIn;
     device = string();
@@ -365,9 +403,12 @@ SerialPort::SerialPort(string numIn, int rowIn) {
 /* Returns the name of the port with the passed row number,
  * if any. Returns empty string otherwise.
  */
-string SerialPortDict::getSerialNumber(int row) {
-    for(unsigned i = 0; i < dict.size(); ++i) {
-        if(dict[i].row == row) return dict[i].serialNumber;
+string SerialPortDict::getSerialNumber(int row)
+{
+    for (unsigned i = 0; i < dict.size(); ++i)
+    {
+        if (dict[i].row == row)
+            return dict[i].serialNumber;
     }
 
     return string();
@@ -376,9 +417,12 @@ string SerialPortDict::getSerialNumber(int row) {
 /* Returns the row number for the serial port associated
  * with the passed name. Returns ERR_QUERY_FAILED otherwise.
  */
-int SerialPortDict::getRow(string serialNumber) {
-    for(unsigned i = 0; i < dict.size(); ++i) {
-        if(dict[i].serialNumber.compare(serialNumber) == STR_EQ) {
+int SerialPortDict::getRow(string serialNumber)
+{
+    for (unsigned i = 0; i < dict.size(); ++i)
+    {
+        if (dict[i].serialNumber.compare(serialNumber) == STR_EQ)
+        {
             return dict[i].row;
         }
     }
@@ -389,7 +433,8 @@ int SerialPortDict::getRow(string serialNumber) {
 /* Adds a new serial port object the the CatoptricSurface object's
  * serial port dictionary.
  */
-void SerialPortDict::addPort(SerialPort port) {
+void SerialPortDict::addPort(SerialPort port)
+{
     dict.push_back(port);
 }
 
@@ -405,30 +450,38 @@ void SerialPortDict::addPort(SerialPort port) {
  *          Both bounds are INCLUSIVE.
  *      Second integer is the length of each row.
  */
-int SurfaceDimensions::initDimensions(string filePath) {
+int SurfaceDimensions::initDimensions(string filePath)
+{
 
     ifstream dimensionsFile(filePath);
 
-    if(dimensionsFile) {
+    if (dimensionsFile)
+    {
 
         string dimensionsLine;
         int rowNumStart = 1, rowNumEnd, rowLen;
 
-        while(getline(dimensionsFile, dimensionsLine)) {
-            
+        while (getline(dimensionsFile, dimensionsLine))
+        {
+
             istringstream iss(dimensionsLine);
 
-            try {
+            try
+            {
                 iss >> rowNumEnd;
                 iss >> rowLen;
-            } catch(...) {
+            }
+            catch (...)
+            {
                 printf("istringstream error- invalid dimensions file contents: "
-                        "%s\n", strerror(errno));
+                       "%s\n",
+                       strerror(errno));
                 return ERR_DIMS_FILE;
             }
 
             // Requires space linear in # rows, but easy indexing operation
-            for(int i = 0; i < rowNumEnd - rowNumStart + 1; ++i) {
+            for (int i = 0; i < rowNumEnd - rowNumStart + 1; ++i)
+            {
                 rowLengths.push_back(rowLen);
             }
 
@@ -444,45 +497,57 @@ int SurfaceDimensions::initDimensions(string filePath) {
 /* Returns the length of the row with the passed row number.
  * Row numbers are ONE-INDEXED! (not my fault)
  */
-int SurfaceDimensions::getLength(unsigned rowNumber) {
-    if(1 <= rowNumber && rowNumber <= rowLengths.size()) {
+int SurfaceDimensions::getLength(unsigned rowNumber)
+{
+    if (1 <= rowNumber && rowNumber <= rowLengths.size())
+    {
         return rowLengths[rowNumber - 1];
-    } else {
+    }
+    else
+    {
         return DEFAULT_ROW_LEN;
     }
 }
 
-void CatoptricSurface::cleanup() {
-    for(CatoptricRow& cr : rowInterfaces) cr.cleanup();
+void CatoptricSurface::cleanup()
+{
+    for (CatoptricRow &cr : rowInterfaces)
+        cr.cleanup();
 }
 
 /***
  * @date  2023-03-04
  * @author ZhengYuan Zhang
  * @brief  Reorients the mirror axis of the specified row to the specified
- *        position. 
+ *        position.
  * @return  void
-*/
-void CatoptricSurface::moveMirror(const int rowNum, const int mirrorID, const int whichMotor, const int directionOfTheMotor,const int steps){
-    if(rowInterfaces.size() < (size_t)rowNum || rowNum < 1) {
+ */
+void CatoptricSurface::moveMirror(const int rowNum, const int mirrorID, const int whichMotor, const int directionOfTheMotor, const int steps)
+{
+    if (rowInterfaces.size() < (size_t)rowNum || rowNum < 1)
+    {
         throw invalid_argument("Row number out of bounds in moveMirror->Input: " + to_string(rowNum));
     }
     rowInterfaces[rowNum - 1].stepMotor(mirrorID, whichMotor, directionOfTheMotor, steps);
 }
 
-void CatoptricSurface::drawProgressBar(int total, int ackd) {
-    if(total <= 0) return;
+void CatoptricSurface::drawProgressBar(int total, int ackd)
+{
+    if (total <= 0)
+        return;
     int numCharsPerMsg = PROGRESS_BAR_LEN / total;
-    if(numCharsPerMsg <= 0) numCharsPerMsg = 1;
+    if (numCharsPerMsg <= 0)
+        numCharsPerMsg = 1;
 
-    for(int i = 0; i < ackd; ++i) {
-        for(int j = 0; j < numCharsPerMsg; ++j) printf("|");
+    for (int i = 0; i < ackd; ++i)
+    {
+        for (int j = 0; j < numCharsPerMsg; ++j)
+            printf("|");
     }
-    for(int i = 0; i < total - ackd; ++i) {
-        for(int j = 0; j < numCharsPerMsg; ++j) printf("-");
+    for (int i = 0; i < total - ackd; ++i)
+    {
+        for (int j = 0; j < numCharsPerMsg; ++j)
+            printf("-");
     }
     printf("]");
 }
-
-
-
