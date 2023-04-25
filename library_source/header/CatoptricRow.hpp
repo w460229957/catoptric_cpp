@@ -82,11 +82,10 @@ class CatoptricRow {
         void stepMotor(int, int, int, 
                 float); 
         // Queue of pending Message objects to be transmitted to Arduino
-        std::unique_ptr<CommandQueue<Message>> commandQueue;
+        std::shared_ptr<CommandQueue<Message>> commandQueue;
         // FSM controlling this Arduino
         SerialFSM fsm;
         CatoptricRow(int & , int &,std::string&);
-        CatoptricRow(CatoptricRow&&);
 	    void reset(bool test);
         void update();
         int resetSerialBuffer();

@@ -74,11 +74,8 @@ class CatoptricSurface {
     private:
         // Thread for running the surface
         std::future<void> future;
-        //Automatic bool to determine if surface is running
-        bool running;
-        // Number of rows in surface
         int numRowsConnected;
-        // Hard-coded dictionary of the setup's Arduinos and each serial number
+        // Number of rows in oded dictionary of the setup's Arduinos and each serial number
         SerialPortDict serialPortOrder; 
         // Encodes the dimensions of surface (length of each row)
         SurfaceDimensions dimensions;
@@ -103,7 +100,6 @@ class CatoptricSurface {
         void drawProgressBar(int total, int ackd);
     public:
         CatoptricSurface();
-        ~CatoptricSurface();
         void update();
         void reset(bool test);
         void updateByCSV(std::string path);

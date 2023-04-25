@@ -21,16 +21,12 @@ using namespace std;
  * Send a Message object from the back of the commandQueue to the Arduino.
  */
 
-
-
-extern CommandQueue<Command> commandQueue;
-
 void CatoptricRow::update() {
     // Send messages to Arduino (sends messages from all rows)
     while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue->size() > 0) { 
         // Pop the last message from the queue
-        auto message = commandQueue->try_pop();
-        sendMessageToArduino(*message);
+        auto message = commandQueue->pop();
+        if(message)sendMessageToArduino(*message);
     }
 
     sleep(RUN_SLEEP_TIME);
@@ -48,7 +44,7 @@ void CatoptricRow::update() {
 
 
 CatoptricRow::CatoptricRow(int & rowNumberIn, int & numMirrorsIn, 
-        std::string& serialPortIn){
+        std::string& serialPortIn):commandQueue{std::make_shared<CommandQueue<Message>>()}{
 
 	rowNumber = rowNumberIn;
 	numMirrors = numMirrorsIn;

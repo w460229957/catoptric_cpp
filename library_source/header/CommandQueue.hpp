@@ -7,6 +7,7 @@
 #include <memory>
 #include <thread>
 #include <type_traits>
+#include <iostream>
 
 struct Command{
   int rowNum;
@@ -36,12 +37,14 @@ public:
     CommandQueue& operator=(const CommandQueue&) = delete;
 
     void push(T const & command){
-        std::lock_guard<std::mutex> lock(queueLock);
-        _mQueue.push(command);
+        queueLock.lock();
+        _mQueue.push(command);        
         holdVar.notify_one();
+        queueLock.unlock();
+
     }
 
-    std::shared_ptr<T> try_pop(){
+    std::shared_ptr<T> pop(){
         std::lock_guard<std::mutex> lock(queueLock);
         if(_mQueue.empty()){
             return nullptr;
@@ -50,13 +53,13 @@ public:
         _mQueue.pop();
         return command;
     }
+
     
-    std::shared_ptr<T> waitAndPop(){
+    void wait(){
         std::unique_lock<std::mutex> lock(queueLock);
-        holdVar.wait(lock, [this]{return !_mQueue.empty();});
-        std::shared_ptr<T> command { std::make_shared<T>(_mQueue.front()) };
-        _mQueue.pop();
-        return command;
+        std::cout <<"try to sleep" << std::endl;
+        holdVar.wait(lock,[this]{return !_mQueue.empty();});
+        return;
     }
 
     std::shared_ptr<T> top(){

@@ -26,47 +26,58 @@ void CatoptricSurface::update()
 {
     /* Each row reads incoming data and updates SerialFSM objects,
     sends messages from the back of respective commandQueue */
-    for (CatoptricRow &cr : rowInterfaces)
-    {
-        cr.update();
-        commandsOut += cr.fsmCommandsOut();
-        ackCount += cr.fsmAckCount();
-        nackCount += cr.fsmNackCount();
-        commandsQueue += cr.commandQueue->size();
+    do{
+        commandsOut = 0;
+        updates = 0;
+        commandsQueue = 0;
+        ackCount = 0;
+        nackCount = 0; 
+        for (CatoptricRow &cr : rowInterfaces)
+        {
+            cr.update();
+            commandsOut += cr.fsmCommandsOut();
+            ackCount += cr.fsmAckCount();
+            nackCount += cr.fsmNackCount();
+            commandsQueue += cr.commandQueue->size();
+        }
+        updates++;
+        // 'commands in queue' is nonzero only when too many commands are
+        // pending and no more can be sent
+        std::cout << std::setw(2) << std::setfill(' ') << commandsOut << " commands out | "
+                << commandsQueue << " commands in queue | "
+                << std::setw(2) << std::setfill(' ') << ackCount << " acks | "
+                << nackCount << " nacks | "
+                << updates << " cycles\n";
+        drawProgressBar(commandsOut + ackCount, ackCount);
+        std::cout << "\033[F\n\n"
+                << std::endl;
+    }while(commandsOut - (ackCount + nackCount) > 0);
+
+    for(CatoptricRow &cr: rowInterfaces){
+        cr.fsm.ackCount = 0;
+        cr.fsm.nackCount = 0;
     }
 
-    updates++;
-    // 'commands in queue' is nonzero only when too many commands are
-    // pending and no more can be sent
-    std::cout << std::setw(2) << std::setfill(' ') << commandsOut << " commands out | "
-            << commandsQueue << " commands in queue | "
-            << std::setw(2) << std::setfill(' ') << ackCount << " acks | "
-            << nackCount << " nacks | "
-            << updates << " cycles\n";
-    drawProgressBar(commandsOut + ackCount, ackCount);
-    std::cout << "\033[F\n\n"
-            << std::endl;
 }
 
-CatoptricSurface::CatoptricSurface() : running(true)
+CatoptricSurface::CatoptricSurface()
 {
 
     SERIAL_INFO_PREFIX = SERIAL_INFO_PREFIX_MACRO;
 
     initSerialPortOrder(ARDUINO_IDS_MAP_FILENAME);
-
     serialPorts = getOrderedSerialPorts();
-    numRowsConnected = serialPorts.size();
-
+    this->numRowsConnected = serialPorts.size();
     dimensions.initDimensions(DIMENSIONS_FILENAME);
     setupRowInterfaces();
-    std::cout << "here" << std::endl;
     sleep(SETUP_SLEEP_TIME);
 
     setbuf(stdout, NULL);
     future = async(launch::async, [this]()
                    {
-        while(running){
+        while(1){
+            PendingCommands.wait();
+            std::atomic_thread_fence(std::memory_order_release);
             auto command = PendingCommands.pop();
             if(command){
                 try{
@@ -76,16 +87,7 @@ CatoptricSurface::CatoptricSurface() : running(true)
                     std::cout << e.what() << std::endl;
                 }
             }
-            update();
-            std::this_thread::sleep_for(std::chrono::seconds(3));  
         } });
-}
-
-CatoptricSurface::~CatoptricSurface()
-{
-    std::cout << "exiting....." << std::endl;
-    running = false;
-    future.get();
 }
 
 /* Reads a config file to populate the map of Arduino USB ids to row numbers.

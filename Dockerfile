@@ -22,5 +22,5 @@ COPY resource/ /
 RUN mv source/libcatoptric_cpp.so /usr/lib && \
     javac fileReader/*.java controller/*.java  && \
     rm -rf source/ header/ Makefile 
-CMD [ "java","fileReader/CatoptricFileReader" ]
+ENTRYPOINT [ "java","fileReader/CatoptricFileReader","-t ","CatoprticProjectTest.txt" ]
 
