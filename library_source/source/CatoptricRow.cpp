@@ -14,6 +14,9 @@
 #include "../header/SerialFSM.hpp"
 #include "../header/prep_serial.hpp"
 #include "../header/ErrCodes.hpp"
+#include <thread>
+#include <chrono>
+#include <atomic>
 using namespace std;
 
 /* Read all input from the corresponding serial port and update the CatoptricRow
@@ -23,32 +26,44 @@ using namespace std;
 
 
 
-extern CommandQueue<Command> commandQueue;
-
+// Send messages to Arduino (sends messages from all rows)
 void CatoptricRow::update() {
-    // Send messages to Arduino (sends messages from all rows)
-    while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue->size() > 0) { 
-        // Pop the last message from the queue
-        auto message = commandQueue->try_pop();
-        sendMessageToArduino(*message);
+
+    //Node:It seems that current ABI protocol does not guarantee that the Arduino
+    //and the Pi will have a consistent view of the command. This is (1)because
+    //each command has several bytes, and current ABI protocol only guarantees
+    //that each byte will be sent atomically. (2)Also, the Arduino and the Pi
+    //have no way of knowing the expected order of the bytes in a command.
+    //Therefore a lock is needed to ensure memory consistency.
+    int expected = 0;
+    int new_val = 1;
+    if(!is_busy.compare_exchange_strong(expected,new_val))return;
+ 
+     while(fsmCommandsOut() < MAX_CMDS_OUT && commandQueue->size() > 0) { 
+        // Pop the first message from the queue
+        auto message = commandQueue->pop();
+        if(message)sendMessageToArduino(*message);
     }
 
-    sleep(RUN_SLEEP_TIME);
     char input;
+    this_thread::sleep_for(chrono::milliseconds(rand() % 100));
     // Read incoming data from Arduino
-    while(read(serial_fd, &input, 1) > 0) {
+    /*
+        while(read(serial_fd, &input, 1) > 0) {
         fsm.Execute(input);
         if(fsm.messageReady) {
             fsm.messageReady = false;
             fsm.clearMsg();
         }
     }
-    
+    */
+    rand() % 100 < 90?++fsm.ackCount:++fsm.nackCount;
+    is_busy.store(0);
 }
 
 
 CatoptricRow::CatoptricRow(int & rowNumberIn, int & numMirrorsIn, 
-        std::string& serialPortIn){
+        std::string& serialPortIn):commandQueue{std::make_shared<CommandQueue<Message>>()}{
 
 	rowNumber = rowNumberIn;
 	numMirrors = numMirrorsIn;
@@ -63,14 +78,31 @@ CatoptricRow::CatoptricRow(int & rowNumberIn, int & numMirrorsIn,
     resetSerialBuffer();
 }
 
+CatoptricRow::CatoptricRow(int & rowNumberIn, int & numMirrorsIn):commandQueue{std::make_shared<CommandQueue<Message>>()}{
+	std::cout <<"Enter Catoptricrow constructor" << std::endl;
+    rowNumber = rowNumberIn;
+	numMirrors = numMirrorsIn;
+	// Initalize a MotorState object for each motor
+	for(int i = 0; i < numMirrors; ++i) {
+        std::cout <<"Enter Catoptricrow numMirror inner loop" << std::endl;
+        MotorState state = MotorState();
+	    motorStates.push_back(state);
+    }
+
+	//Open pseudo file for testing
+    serial_fd = 0;
+    std::cout <<"Exit Catoptricrow constructor" << std::endl;
+}
+
 /* Prepare the correpsonding serial port for IO (termios).
  */
 int CatoptricRow::setupSerial(const std::string& serialPortIn) {
     
     // Returns fd for configured serial port
-    serial_fd = prep_serial(serialPortIn.c_str()); 
+    // serial_fd = prep_serial(serialPortIn.c_str()); --????????????
     
     // Flush residual data in buffer
+    std::cout << "hello!" << std::endl;
     resetSerialBuffer();
     
     sleep(SETUP_SLEEP_TIME); // It's unclear why this function must sleep
@@ -81,14 +113,16 @@ int CatoptricRow::setupSerial(const std::string& serialPortIn) {
 /* Flush the serial port buffer.
  */
 int CatoptricRow::resetSerialBuffer() {
-    if(tcflush(serial_fd, TCIOFLUSH) < 0) {
+    /*
+        if(tcflush(serial_fd, TCIOFLUSH) < 0) {
         printf("tcflush error: %s\n", strerror(errno));
         return ERR_TCFLUSH;
     }
 
     return RET_SUCCESS;
-}
+    */
 
+}
 
 /* Transmit the passed Message to the Arduino.
  */
@@ -99,18 +133,22 @@ void CatoptricRow::sendMessageToArduino(Message message) {
 
 	for(int i = 0; i < NUM_MSG_ELEMS; ++i) {
 		bCurrent = message_vec[i];
+        /*
         if(write(serial_fd, &bCurrent, 1) < 0) {
             std::cout << "write error-> "  << message << std::endl;
             return;
         }
+        
+        */
+
     }
 
-    printf("Successfully sent message to Arduino:"); 
+    printf("Successfully sent message to Arduino(internal representation col starts at 0):"); 
     vector<char> msgVec = message.toVec();
     for(char c : msgVec) printf("%3d ", (unsigned) c);
     printf("\n");
 
-	fsm.currentCommandsToArduino += 1; // New sent message, awaiting ack
+	++fsm.currentCommandsToArduino; // New sent message, awaiting ack
 }
 
 /* Push a Message onto the commandQueue to update a mirror's position.
@@ -129,7 +167,6 @@ void CatoptricRow::stepMotor(int mirrorID, int whichMotor,
 	Message message (rowNumber, mirrorID, whichMotor, direction, 
             countHigh, countLow);
     
-
 	commandQueue->push(message);
 }
 

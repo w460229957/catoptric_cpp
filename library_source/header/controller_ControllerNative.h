@@ -39,14 +39,6 @@ JNIEXPORT void JNICALL Java_controller_ControllerNative_test
 JNIEXPORT void JNICALL Java_controller_ControllerNative_quit
   (JNIEnv *, jobject);
 
-/*
- * Class:     controller_ControllerNative
- * Method:    getPendingMessages
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_controller_ControllerNative_getPendingMessages
-  (JNIEnv *, jobject);
-
 #ifdef __cplusplus
 }
 #endif
