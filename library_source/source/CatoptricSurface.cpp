@@ -71,23 +71,7 @@ CatoptricSurface::CatoptricSurface()
     dimensions.initDimensions(DIMENSIONS_FILENAME);
     setupRowInterfaces();
     sleep(SETUP_SLEEP_TIME);
-
     setbuf(stdout, NULL);
-    future = async(launch::async, [this]()
-                   {
-        while(1){
-            PendingCommands.wait();
-            std::atomic_thread_fence(std::memory_order_release);
-            auto command = PendingCommands.pop();
-            if(command){
-                try{
-                    (*command)(this);
-                }catch(const std::exception & e){
-                    std::cout << "Exception occured during async move process.."<<std::endl;
-                    std::cout << e.what() << std::endl;
-                }
-            }
-        } });
 }
 
 /* Reads a config file to populate the map of Arduino USB ids to row numbers.
